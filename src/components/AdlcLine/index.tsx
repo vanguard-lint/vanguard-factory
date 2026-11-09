@@ -1,130 +1,105 @@
 import React, { useEffect, useRef } from 'react';
 
 export default function AdlcLine(): React.JSX.Element {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const staticRef = useRef<SVGGElement | null>(null);
-  const gatesRef = useRef<SVGGElement | null>(null);
-  const tokensRef = useRef<SVGGElement | null>(null);
 
   useEffect(() => {
+    const wrap = wrapRef.current;
     const svg = svgRef.current;
-    const S = staticRef.current;
-    const G = gatesRef.current;
-    const T = tokensRef.current;
-    if (!svg || !S || !G || !T) return;
-
-    S.innerHTML = '';
-    G.innerHTML = '';
-    T.innerHTML = '';
+    if (!wrap || !svg) return;
 
     const NS = 'http://www.w3.org/2000/svg';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const st: [string, number][] = [
+      ['Triage', 0],
+      ['Spec', 1],
+      ['Build', 0],
+      ['Review', 1],
+      ['Verify', 0],
+      ['Ship', 1],
+      ['Monitor', 0],
+    ];
+
     function mk(t: string, a: Record<string, string | number>, p?: Element): SVGElement {
       const e = document.createElementNS(NS, t);
       for (const k in a) e.setAttribute(k, String(a[k]));
-      (p || svg).appendChild(e);
+      (p || svg)!.appendChild(e);
       return e;
     }
 
-    const Y = 128, BOT = 172, X0 = 90, X1 = 1150, DX = (X1 - X0) / 6, PW = 140;
-    const st: [string, number, string][] = [
-      ['Triage', 0, 'M-14 -11 H14 L4 2 V13 L-4 9 V2 Z'],
-      ['Spec', 1, 'M-10 -14 H5 L10 -9 V14 H-10 Z M-4 -3 H4 M-4 3 H4'],
-      ['Build', 0, 'M-5 -9 L-14 0 L-5 9 M5 -9 L14 0 L5 9'],
-      ['Review', 1, 'M-13 -7 H-3 M-8 -12 V-2 M3 7 H13 M9 -13 L-9 13'],
-      ['Verify', 0, 'M-13 0 L-5 8 L13 -9'],
-      ['Ship', 1, 'M0 12 V-10 M-9 -2 L0 -11 L9 -2'],
-      ['Monitor', 0, 'M-14 0 H-8 L-4 -10 L2 11 L5 0 H14']
-    ];
-
-    mk('path', { class: 'rail', d: 'M' + X0 + ' ' + Y + ' H' + X1 }, S);
-    mk('path', { class: 'rail back', d: 'M' + X1 + ' ' + Y + ' V' + BOT + ' H' + X0 + ' V' + (Y + 8) }, S);
-    mk('path', { class: 'chev', d: 'M' + (X0 - 7) + ' ' + (Y + 20) + ' L' + X0 + ' ' + (Y + 10) + ' L' + (X0 + 7) + ' ' + (Y + 20) }, S);
-    mk('text', { class: 'cap', x: (X0 + X1) / 2, y: BOT + 34 }, S).textContent = 'Finished tickets loop back as new requests';
-
-    type Gate = { el: SVGLineElement; stop: number; o: number; t: number };
-    const gates: Gate[] = [];
-
-    st.forEach(function (s, i) {
-      const x = X0 + i * DX;
-      const g = mk('g', { class: 'st' + (s[1] ? ' h' : ''), transform: 'translate(' + x + ',0)' }, S);
-      mk('rect', { x: -PW / 2, y: 24, width: PW, height: 56, rx: 8 }, g);
-      mk('path', { class: 'ic', d: s[2], transform: 'translate(-40,52) scale(.85)' }, g);
-      mk('text', { class: 'nm', x: -18, y: 59 }, g).textContent = s[0];
-      if (s[1]) {
-        mk('circle', { class: 'badge', cx: PW / 2 - 4, cy: 24, r: 13 }, g);
-        mk('circle', { class: 'ppd', cx: PW / 2 - 4, cy: 20.5, r: 3 }, g);
-        mk('path', { class: 'pp', d: 'M' + (PW / 2 - 9.5) + ' 30 Q' + (PW / 2 - 4) + ' 22 ' + (PW / 2 + 1.5) + ' 30' }, g);
-      }
-      const gx = x + DX / 2;
-      if (i < 6 && !s[1]) {
-        mk('path', { class: 'chev', d: 'M' + (gx - 4) + ' ' + (Y - 8) + ' L' + (gx + 4) + ' ' + Y + ' L' + (gx - 4) + ' ' + (Y + 8) }, S);
-      }
-      if (s[1]) {
-        const gl = mk('line', { class: 'gate', x1: gx, x2: gx, y1: 92, y2: Y }, G) as SVGLineElement;
-        gates.push({ el: gl, stop: gx - 26 - X0, o: 0, t: 0 });
-      }
-    });
-
-    const path = mk('path', { d: 'M' + X0 + ' ' + Y + ' H' + X1 + ' V' + BOT + ' H' + X0 + ' Z', fill: 'none' }, S) as SVGPathElement;
-    const L = path.getTotalLength(), END = X1 - X0;
+    type Gate = {
+      ring: SVGElement | null;
+      cx: number;
+      cy: number;
+      stop: number;
+      o: number;
+      w: boolean;
+    };
 
     type Token = {
-      g: SVGGElement;
-      l: SVGTextElement;
+      c: SVGElement;
+      l: SVGElement;
       pos: number;
       s: string;
       passed: Record<number, boolean>;
       rej: boolean;
       doRej: boolean;
-      tm?: number;
-      gi?: number;
-      tgt?: number;
+      tm: number;
+      gi: number;
+      tgt: number;
     };
 
-    function TK(): Token {
-      const g = mk('g', { class: 'tk' }, T) as SVGGElement;
-      mk('rect', { x: -17, y: -12, width: 34, height: 24, rx: 5 }, g);
-      mk('path', { d: 'M-8 -3 H8 M-8 4 H3', stroke: 'var(--ifm-color-content-secondary)', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, g);
-      return { g, l: mk('text', { class: 'l', y: -20 }, g) as SVGTextElement, pos: 0, s: 'move', passed: {}, rej: false, doRej: false };
+    let gates: Gate[] = [];
+    let tokens: Token[] = [];
+    let path: SVGPathElement | null = null;
+    let L = 0;
+    let END = 0;
+    let STEP = 0;
+    let vert = false;
+    let W = 0;
+    let raf = 0;
+    let last: number | null = null;
+    const V = 140;
+    const R = 26;
+    const OFF = 44;
+    let frac = [0, 1 / 3, 2 / 3];
+
+    function place(k: Token) {
+      if (!path) return;
+      const p = path.getPointAtLength(((k.pos % L) + L) % L);
+      const w = k.s !== 'move';
+      k.c.setAttribute('cx', String(p.x));
+      k.c.setAttribute('cy', String(p.y));
+      k.c.setAttribute('class', 'tk' + (w ? ' w' : ''));
+      if (vert) {
+        k.l.setAttribute('x', String(p.x + 14));
+        k.l.setAttribute('y', String(p.y + 4.5));
+      } else {
+        k.l.setAttribute('x', String(p.x));
+        k.l.setAttribute('y', String(p.y + 40));
+      }
+      k.l.setAttribute('class', 'tl' + (w ? ' w' : ''));
+      k.l.textContent = lab(k);
     }
 
-    function label(k: Token) {
-      const v: Record<string, string> = { wait: 'review', back: 'concerns', fix: 'fixing' };
+    function lab(k: Token) {
+      const v: Record<string, string> = { wait: 'approval', back: 'concerns', fix: 'fixing' };
       if (v[k.s]) return v[k.s];
       if (k.pos > END) return 'new ticket';
-      if (k.pos > gates[2].stop + 20) return 'done';
+      if (gates[2] && k.pos > gates[2].stop + 24) return 'done';
       return 'in progress';
     }
 
-    function place(k: Token) {
-      const p = path.getPointAtLength(((k.pos % L) + L) % L);
-      k.g.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
-      k.g.setAttribute('class', 'tk' + (k.s === 'wait' || k.s === 'back' || k.s === 'fix' ? ' w' : ''));
-      k.l.textContent = label(k);
-    }
-
-    const tokens: Token[] = [0, 1, 2].map(function (i) {
-      const k = TK();
-      k.pos = (i * L) / 3;
-      k.s = 'move';
-      k.passed = {};
-      k.rej = false;
-      k.doRej = i === 1;
-      return k;
-    });
-
-    tokens.forEach(place);
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const V = 150;
-    let last: number | null = null;
-    let animId: number;
-
+    let ang = 0;
     function frame(t: number) {
       if (last === null) last = t;
       const dt = Math.min((t - last) / 1000, 0.1);
       last = t;
+
+      gates.forEach(function (g) {
+        g.w = false;
+      });
 
       tokens.forEach(function (k) {
         if (k.s === 'move') {
@@ -134,7 +109,7 @@ export default function AdlcLine(): React.JSX.Element {
             if (k.pos < g.stop && np >= g.stop && !k.passed[i]) {
               np = g.stop;
               k.s = 'wait';
-              k.tm = k.doRej && i === 1 && !k.rej ? 1.1 : 0.95;
+              k.tm = k.doRej && i === 1 && !k.rej ? 1.2 : 0.9;
               k.gi = i;
             }
           }
@@ -146,64 +121,178 @@ export default function AdlcLine(): React.JSX.Element {
             k.doRej = Math.random() < 0.5;
           }
         } else if (k.s === 'wait') {
-          k.tm = (k.tm ?? 0) - dt;
+          gates[k.gi].w = true;
+          k.tm -= dt;
           if (k.tm <= 0) {
             if (k.doRej && k.gi === 1 && !k.rej) {
               k.s = 'back';
               k.rej = true;
-              k.tgt = gates[0].stop + DX;
+              k.tgt = gates[0].stop + STEP;
             } else {
-              k.s = 'open';
-              k.tm = 0.3;
-              if (k.gi !== undefined) {
-                gates[k.gi].t = 1;
-                k.passed[k.gi] = true;
-              }
+              k.passed[k.gi] = true;
+              k.s = 'move';
             }
           }
         } else if (k.s === 'back') {
-          k.pos -= V * 1.4 * dt;
-          if (k.pos <= (k.tgt ?? 0)) {
-            k.pos = k.tgt ?? 0;
+          k.pos -= V * 1.5 * dt;
+          if (k.pos <= k.tgt) {
+            k.pos = k.tgt;
             k.s = 'fix';
             k.tm = 1.1;
           }
         } else {
-          k.tm = (k.tm ?? 0) - dt;
+          k.tm -= dt;
           if (k.tm <= 0) k.s = 'move';
         }
         place(k);
       });
 
+      ang += dt * 30;
       gates.forEach(function (g) {
-        if (g.t > 0) g.t -= dt;
-        g.o += ((g.t > 0 ? 1 : 0) - g.o) * Math.min(1, dt * 9);
-        g.el.setAttribute('y2', String(Y - (Y - 92) * g.o));
+        g.o += ((g.w ? 1 : 0) - g.o) * Math.min(1, dt * 10);
+        if (g.ring) {
+          g.ring.setAttribute('opacity', g.o.toFixed(2));
+          g.ring.setAttribute('transform', 'rotate(' + ang.toFixed(1) + ' ' + g.cx + ' ' + g.cy + ')');
+        }
       });
-
-      animId = requestAnimationFrame(frame);
+      raf = requestAnimationFrame(frame);
     }
 
-    animId = requestAnimationFrame(frame);
+    function build() {
+      cancelAnimationFrame(raf);
+      last = null;
+      if (tokens.length && L) frac = tokens.map((k) => k.pos / L);
+      W = Math.round(wrap!.clientWidth);
+      vert = W < 760;
+
+      while (svg!.firstChild) svg!.removeChild(svg!.firstChild);
+
+      let H = 0;
+      const P: [number, number][] = [];
+      let pd = 0;
+      let x0 = 0;
+      let y0 = 0;
+      let d = '';
+
+      if (!vert) {
+        H = 206;
+        pd = Math.max(64, W * 0.06);
+        x0 = pd;
+        STEP = (W - 2 * pd) / 6;
+        const Y = 92;
+        const YB = 176;
+        END = W - 2 * pd;
+        mk('line', { class: 'dash', x1: 0, x2: W, y1: 0.5, y2: 0.5 });
+        mk('line', { class: 'dash', x1: 0, x2: W, y1: H - 0.5, y2: H - 0.5 });
+        mk('line', { class: 'rail', x1: 0, x2: W, y1: Y, y2: Y });
+        mk('path', { class: 'dash', d: 'M' + (W - pd) + ' ' + Y + ' V' + YB + ' H' + pd + ' V' + Y });
+        mk('path', {
+          class: 'dash',
+          d: 'M' + (pd - 5) + ' ' + (Y + 18) + ' L' + pd + ' ' + (Y + 10) + ' L' + (pd + 5) + ' ' + (Y + 18),
+          'stroke-dasharray': 'none',
+        });
+        mk('text', { class: 'cap', x: W / 2, y: YB + 20, 'text-anchor': 'middle' }).textContent =
+          'finished tickets return as new requests';
+        d = 'M' + pd + ' ' + Y + ' H' + (W - pd) + ' V' + YB + ' H' + pd + ' Z';
+        st.forEach(function (_, i) {
+          P.push([x0 + i * STEP, Y]);
+        });
+      } else {
+        y0 = 44;
+        STEP = 84;
+        pd = 44;
+        const RX = 44;
+        const RR = W - 26;
+        const YE = y0 + 6 * STEP + 56;
+        H = YE + 56;
+        END = YE - y0;
+        mk('line', { class: 'dash', x1: 0, x2: W, y1: 0.5, y2: 0.5 });
+        mk('line', { class: 'dash', x1: 0, x2: W, y1: H - 0.5, y2: H - 0.5 });
+        mk('line', { class: 'rail', x1: RX, x2: RX, y1: 0, y2: H });
+        mk('path', { class: 'dash', d: 'M' + RX + ' ' + YE + ' H' + RR + ' V' + y0 + ' H' + RX });
+        mk('text', { class: 'cap', x: W / 2, y: YE + 24, 'text-anchor': 'middle' }).textContent =
+          'finished tickets return as new requests';
+        d = 'M' + RX + ' ' + y0 + ' V' + YE + ' H' + RR + ' V' + y0 + ' Z';
+        st.forEach(function (_, i) {
+          P.push([RX, y0 + i * STEP]);
+        });
+      }
+
+      svg!.setAttribute('height', String(H));
+      svg!.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      gates = [];
+      st.forEach(function (s, i) {
+        const x = P[i][0];
+        const y = P[i][1];
+        const g = mk('g', {});
+        let ring: SVGElement | null = null;
+        if (s[1]) ring = mk('circle', { class: 'ring', cx: x, cy: y, r: R + 9, opacity: 0 }, g);
+        mk('circle', { class: 'disc' + (s[1] ? ' h' : ''), cx: x, cy: y, r: R }, g);
+        mk('text', { class: 'num', x: x, y: y + 5.5 }, g).textContent = '0' + (i + 1);
+        const nm = mk(
+          'text',
+          vert ? { class: 'nm', x: x + R + 22, y: y + 6 } : { class: 'nm', x: x, y: y - R - 16, 'text-anchor': 'middle' },
+          g
+        );
+        nm.textContent = s[0];
+        if (s[1]) gates.push({ ring: ring, cx: x, cy: y, stop: vert ? y - OFF - y0 : x - OFF - x0, o: 0, w: false });
+      });
+
+      path = mk('path', { d: d, fill: 'none' }) as SVGPathElement;
+      path.style.display = 'none';
+      L = path.getTotalLength();
+
+      tokens = [0, 1, 2].map(function (i) {
+        const c = mk('circle', { class: 'tk', r: 7 });
+        const l = mk('text', vert ? { class: 'tl', x: 14, y: 4.5 } : { class: 'tl', 'text-anchor': 'middle', y: 40 });
+        return { c: c, l: l, pos: frac[i] * L, s: 'move', passed: {}, rej: false, doRej: i === 1, tm: 0, gi: 0, tgt: 0 };
+      });
+
+      tokens.forEach(place);
+      if (!reduce) raf = requestAnimationFrame(frame);
+    }
+
+    let ro: ResizeObserver | null = null;
+    if (window.ResizeObserver) {
+      ro = new ResizeObserver(function () {
+        if (Math.round(wrap!.clientWidth) !== W) build();
+      });
+      ro.observe(wrap);
+    } else {
+      window.addEventListener('resize', build);
+    }
+
+    build();
 
     return () => {
-      cancelAnimationFrame(animId);
+      cancelAnimationFrame(raf);
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', build);
     };
   }, []);
 
   return (
-    <section className="adlc-line" aria-label="ADLC pipeline">
-      <div className="scroll">
-        <svg
-          ref={svgRef}
-          viewBox="0 0 1240 230"
-          role="img"
-          aria-label="Tickets move through 7 ADLC stages; three red gates need a human approval and a ticket can be sent back for fixes">
-          <g ref={staticRef} id="static" />
-          <g ref={gatesRef} id="gates" />
-          <g ref={tokensRef} id="tokens" />
-        </svg>
+    <section ref={wrapRef} className="adlc-life" aria-label="ADLC lifecycle">
+      <div className="head">
+        <h2>Lifecycle</h2>
+        <div className="lg">
+          <span>
+            <i />
+            agent
+          </span>
+          <span>
+            <i className="h" />
+            human approval
+          </span>
+        </div>
       </div>
+      <svg
+        ref={svgRef}
+        id="al"
+        role="img"
+        aria-label="Tickets move through 7 ADLC stages; Spec, Review and Ship wait for a human approval, and a ticket can be sent back for fixes"
+      />
     </section>
   );
 }

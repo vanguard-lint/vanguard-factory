@@ -22,6 +22,10 @@
   --ifm-color-primary-lighter: #ee6b62;
   --ifm-color-primary-lightest: #f3928b;
   --red-soft: rgba(231, 69, 57, 0.12);
+  --disc: #d3d1d2;
+  --disc-ink: #161a1d;
+  --rule: #9aa0a6;
+  --on-primary: #fff;
 
   --ifm-code-font-size: 92%;
   --docusaurus-highlighted-code-line-bg: rgba(231, 69, 57, 0.1);
@@ -56,6 +60,10 @@
   --ifm-color-primary-lighter: #f6aba4;
   --ifm-color-primary-lightest: #fbcfcb;
   --red-soft: rgba(240, 135, 125, 0.16);
+  --on-primary: #292929;
+  --disc: #c9c9c9;
+  --disc-ink: #292929;
+  --rule: #6b6b6b;
 
   /* Vanguard OSV-derived Dark Backgrounds */
   --ifm-background-color: #292929;
@@ -102,23 +110,33 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: normal;
 }
 
-/* Link and Button styling */
+/* Link and Button styling - Exact Vanguard Spec Size */
 .button--primary,
+.hero--primary .button,
 .hero--primary .button--secondary {
-  background-color: #e74539 !important;
-  color: #ffffff !important;
-  border-color: #e74539 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 18px;
+  font-size: 0.95rem;
   font-family: 'Overpass', sans-serif;
   font-weight: 600;
   border-radius: 4px;
+  background-color: #e74539 !important;
+  color: #ffffff !important;
+  border: 1px solid #e74539 !important;
+  text-decoration: none;
   transition: all 0.2s ease-in-out;
 }
 
 .button--primary:hover,
+.hero--primary .button:hover,
 .hero--primary .button--secondary:hover {
-  background-color: #d03e33 !important;
-  border-color: #d03e33 !important;
-  opacity: 0.95;
+  background-color: rgba(231, 69, 57, 0.85) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  text-decoration: none;
 }
 
 /* Hero Section */
@@ -133,7 +151,10 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .hero__title {
+  font-family: var(--ifm-font-family-monospace) !important;
+  font-weight: 400 !important;
   font-size: 2.75rem;
+  letter-spacing: -0.01em;
   color: var(--ifm-font-color-base);
 }
 
@@ -223,103 +244,105 @@ h1, h2, h3, h4, h5, h6,
   margin-top: 2rem;
 }
 
-/* ===== DÂY CHUYỀN ADLC V2 ===== */
-.adlc-line {
-  padding: 68px 16px 100px;
-  border-bottom: 1px solid var(--ifm-toc-border-color);
-  background-color: var(--ifm-background-color);
+/* ===== ADLC LIFECYCLE ===== */
+.adlc-life {
+  padding: 48px 0 80px;
 }
-.adlc-line .scroll {
+.adlc-life .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 0 32px 20px;
   max-width: 1240px;
   margin: 0 auto;
-  overflow-x: auto;
 }
-.adlc-line svg {
-  display: block;
-  min-width: 900px;
-  width: 100%;
-  height: auto;
+.adlc-life h2 {
+  font-family: var(--ifm-font-family-monospace) !important;
+  font-weight: 400 !important;
+  font-size: 1.65rem;
+  margin: 0;
+  letter-spacing: -0.01em;
 }
-.adlc-line .rail {
-  stroke: var(--ifm-toc-border-color);
-  stroke-width: 2.5;
-  fill: none;
-}
-.adlc-line .back {
-  stroke-dasharray: 2 8;
-  stroke-linecap: round;
-}
-.adlc-line .chev {
-  fill: none;
-  stroke: var(--ifm-color-content-secondary);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.adlc-line .st rect {
-  fill: var(--ifm-background-color);
-  stroke: var(--ifm-color-content-secondary);
-  stroke-width: 2;
-}
-.adlc-line .st.h rect {
-  stroke: var(--ifm-color-primary);
-  fill: var(--red-soft);
-}
-.adlc-line .ic {
-  fill: none;
-  stroke: var(--ifm-font-color-base);
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.adlc-line .st.h .ic {
-  stroke: var(--ifm-color-primary);
-}
-.adlc-line .nm {
-  fill: var(--ifm-font-color-base);
-  font-family: var(--ifm-font-family-base);
-  font-weight: 700;
-  font-size: 20px;
-}
-.adlc-line .gate {
-  stroke: var(--ifm-color-primary);
-  stroke-width: 5;
-  stroke-linecap: round;
-}
-.adlc-line .badge {
-  fill: var(--ifm-color-primary);
-}
-.adlc-line .pp {
-  fill: none;
-  stroke: var(--ifm-background-color);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-.adlc-line .ppd {
-  fill: var(--ifm-background-color);
-}
-.adlc-line .tk rect {
-  fill: var(--ifm-background-color);
-  stroke: var(--ifm-font-color-base);
-  stroke-width: 2.4;
-}
-.adlc-line .tk.w rect {
-  stroke: var(--ifm-color-primary);
-  fill: var(--red-soft);
-}
-.adlc-line .tk .l {
-  fill: var(--ifm-color-content-secondary);
+.adlc-life .lg {
   font-family: var(--ifm-font-family-monospace);
-  font-size: 14px;
-  font-weight: 600;
-  text-anchor: middle;
+  font-size: 0.85rem;
+  color: var(--ifm-color-content-secondary);
+  display: flex;
+  gap: 20px;
+  align-items: center;
 }
-.adlc-line .tk.w .l {
+.adlc-life .lg i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--disc);
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+.adlc-life .lg i.h {
+  background: var(--ifm-color-primary);
+}
+.adlc-life svg {
+  display: block;
+  width: 100%;
+}
+.adlc-life .dash {
+  stroke: var(--rule);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+.adlc-life .rail {
+  stroke: var(--rule);
+  stroke-width: 1.5;
+  fill: none;
+}
+.adlc-life .disc {
+  fill: var(--disc);
+}
+.adlc-life .disc.h {
   fill: var(--ifm-color-primary);
 }
-.adlc-line .cap {
-  fill: var(--ifm-color-content-secondary);
-  font-family: var(--ifm-font-family-base);
+.adlc-life .num {
+  fill: var(--disc-ink);
+  font-family: var(--ifm-font-family-monospace);
   font-size: 16px;
   text-anchor: middle;
+}
+.adlc-life .disc.h + .num {
+  fill: var(--on-primary);
+}
+.adlc-life .nm {
+  fill: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 17px;
+}
+.adlc-life .ring {
+  fill: none;
+  stroke: var(--ifm-color-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+}
+.adlc-life .tk {
+  fill: var(--ifm-font-color-base);
+}
+.adlc-life .tk.w {
+  fill: var(--ifm-color-primary);
+}
+.adlc-life .tl {
+  fill: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 13px;
+}
+.adlc-life .tl.w {
+  fill: var(--ifm-color-primary);
+}
+.adlc-life .cap {
+  fill: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 13px;
 }
