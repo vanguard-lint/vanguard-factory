@@ -13,7 +13,6 @@ export default function AdlcLine(): React.JSX.Element {
     const T = tokensRef.current;
     if (!svg || !S || !G || !T) return;
 
-    // Reset children on mount/remount
     S.innerHTML = '';
     G.innerHTML = '';
     T.innerHTML = '';
@@ -26,46 +25,48 @@ export default function AdlcLine(): React.JSX.Element {
       return e;
     }
 
-    const Y = 176, X0 = 100, DX = 1000 / 6, BOT = 262;
-    const st: [string, string, number, string][] = [
-      ['Triage', 'triage agent', 0, 'M-16 -12 H16 L5 2 V14 L-5 10 V2 Z'],
-      ['Đặc tả', 'duyệt spec', 1, 'M-12 -16 H8 L12 -12 V16 H-12 Z M-6 -6 H6 M-6 0 H6 M-6 6 H1'],
-      ['Triển khai', 'sandbox agent', 0, 'M-6 -10 L-16 0 L-6 10 M6 -10 L16 0 L6 10 M2 -14 L-2 14'],
-      ['Review code', 'duyệt pull request', 1, 'M-14 -8 H-2 M-8 -14 V-2 M2 8 H14 M10 -14 L-10 14'],
-      ['Kiểm thử', 'test forge', 0, 'M-14 -8 L-10 -4 L-4 -12 M2 -8 H14 M-14 8 L-10 12 L-4 4 M2 8 H14'],
-      ['Phát hành', 'duyệt phát hành', 1, 'M0 9 V-9 M-7 -2 L0 -9 L7 -2 M-14 14 H14'],
-      ['Giám sát', 'observability', 0, 'M-16 0 H-8 L-4 -10 L2 12 L6 0 H16']
+    const Y = 128, BOT = 172, X0 = 90, X1 = 1150, DX = (X1 - X0) / 6, PW = 140;
+    const st: [string, number, string][] = [
+      ['Triage', 0, 'M-14 -11 H14 L4 2 V13 L-4 9 V2 Z'],
+      ['Spec', 1, 'M-10 -14 H5 L10 -9 V14 H-10 Z M-4 -3 H4 M-4 3 H4'],
+      ['Build', 0, 'M-5 -9 L-14 0 L-5 9 M5 -9 L14 0 L5 9'],
+      ['Review', 1, 'M-13 -7 H-3 M-8 -12 V-2 M3 7 H13 M9 -13 L-9 13'],
+      ['Verify', 0, 'M-13 0 L-5 8 L13 -9'],
+      ['Ship', 1, 'M0 12 V-10 M-9 -2 L0 -11 L9 -2'],
+      ['Monitor', 0, 'M-14 0 H-8 L-4 -10 L2 11 L5 0 H14']
     ];
 
-    // Đường ray
-    mk('path', { class: 'rail', d: 'M' + X0 + ' ' + Y + ' H1100' }, S);
-    mk('path', { class: 'rail back', d: 'M1100 ' + Y + ' V' + BOT + ' H' + X0 + ' V' + (Y + 10) }, S);
-    mk('path', { class: 'chev', d: 'M94 ' + (Y + 22) + ' L100 ' + (Y + 12) + ' L106 ' + (Y + 22) }, S);
-    mk('text', { class: 'cap', x: 600, y: BOT + 26 }, S).textContent = 'Ticket hoàn tất đi vòng về đầu thành yêu cầu mới';
+    mk('path', { class: 'rail', d: 'M' + X0 + ' ' + Y + ' H' + X1 }, S);
+    mk('path', { class: 'rail back', d: 'M' + X1 + ' ' + Y + ' V' + BOT + ' H' + X0 + ' V' + (Y + 8) }, S);
+    mk('path', { class: 'chev', d: 'M' + (X0 - 7) + ' ' + (Y + 20) + ' L' + X0 + ' ' + (Y + 10) + ' L' + (X0 + 7) + ' ' + (Y + 20) }, S);
+    mk('text', { class: 'cap', x: (X0 + X1) / 2, y: BOT + 34 }, S).textContent = 'Finished tickets loop back as new requests';
 
-    type Gate = { el: SVGLineElement; stop: number; o: number; t: number; idx: number };
+    type Gate = { el: SVGLineElement; stop: number; o: number; t: number };
     const gates: Gate[] = [];
 
     st.forEach(function (s, i) {
       const x = X0 + i * DX;
-      const g = mk('g', { class: 'st' + (s[2] ? ' h' : ''), transform: 'translate(' + x + ',0)' }, S);
-      mk('rect', { x: -36, y: 64, width: 72, height: 72, rx: 6 }, g);
-      mk('path', { class: 'ic', d: s[3], transform: 'translate(0,100)' }, g);
-      mk('text', { class: 'nm', y: 208 }, g).textContent = s[0];
-      mk('text', { class: 'sub', y: 226 }, g).textContent = s[1];
-      if (i < 6) mk('path', { class: 'chev', d: 'M' + (DX / 2 + 4) + ' ' + (Y - 6) + ' L' + (DX / 2 + 10) + ' ' + Y + ' L' + (DX / 2 + 4) + ' ' + (Y + 6) }, g);
-      if (s[2]) {
-        mk('circle', { class: 'badge', cx: 36, cy: 64, r: 10 }, g);
-        mk('circle', { class: 'ppd', cx: 36, cy: 61, r: 2.4 }, g);
-        mk('path', { class: 'pp', d: 'M31.5 69 Q36 62.5 40.5 69' }, g);
-        const gl = mk('line', { class: 'gate', x1: x + 50, x2: x + 50, y1: 112, y2: Y }, G) as SVGLineElement;
-        gates.push({ el: gl, stop: x + 32 - X0, o: 0, t: 0, idx: i });
+      const g = mk('g', { class: 'st' + (s[1] ? ' h' : ''), transform: 'translate(' + x + ',0)' }, S);
+      mk('rect', { x: -PW / 2, y: 24, width: PW, height: 56, rx: 8 }, g);
+      mk('path', { class: 'ic', d: s[2], transform: 'translate(-40,52) scale(.85)' }, g);
+      mk('text', { class: 'nm', x: -18, y: 59 }, g).textContent = s[0];
+      if (s[1]) {
+        mk('circle', { class: 'badge', cx: PW / 2 - 4, cy: 24, r: 13 }, g);
+        mk('circle', { class: 'ppd', cx: PW / 2 - 4, cy: 20.5, r: 3 }, g);
+        mk('path', { class: 'pp', d: 'M' + (PW / 2 - 9.5) + ' 30 Q' + (PW / 2 - 4) + ' 22 ' + (PW / 2 + 1.5) + ' 30' }, g);
+      }
+      const gx = x + DX / 2;
+      if (i < 6 && !s[1]) {
+        mk('path', { class: 'chev', d: 'M' + (gx - 4) + ' ' + (Y - 8) + ' L' + (gx + 4) + ' ' + Y + ' L' + (gx - 4) + ' ' + (Y + 8) }, S);
+      }
+      if (s[1]) {
+        const gl = mk('line', { class: 'gate', x1: gx, x2: gx, y1: 92, y2: Y }, G) as SVGLineElement;
+        gates.push({ el: gl, stop: gx - 26 - X0, o: 0, t: 0 });
       }
     });
 
-    const path = mk('path', { d: 'M' + X0 + ' ' + Y + ' H1100 V' + BOT + ' H' + X0 + ' Z', fill: 'none' }, S) as SVGPathElement;
-    const L = path.getTotalLength();
-    const END = 1000;
+    const path = mk('path', { d: 'M' + X0 + ' ' + Y + ' H' + X1 + ' V' + BOT + ' H' + X0 + ' Z', fill: 'none' }, S) as SVGPathElement;
+    const L = path.getTotalLength(), END = X1 - X0;
 
     type Token = {
       g: SVGGElement;
@@ -82,16 +83,15 @@ export default function AdlcLine(): React.JSX.Element {
 
     function TK(): Token {
       const g = mk('g', { class: 'tk' }, T) as SVGGElement;
-      mk('rect', { x: -13, y: -9, width: 26, height: 18, rx: 3 }, g);
-      mk('path', { d: 'M-6 -2 H6 M-6 3 H2', stroke: 'var(--ifm-color-content-secondary)', 'stroke-width': 1.4, 'stroke-linecap': 'round' }, g);
-      const l = mk('text', { class: 'l', y: -16 }, g) as SVGTextElement;
-      return { g, l, pos: 0, s: 'move', passed: {}, rej: false, doRej: false };
+      mk('rect', { x: -17, y: -12, width: 34, height: 24, rx: 5 }, g);
+      mk('path', { d: 'M-8 -3 H8 M-8 4 H3', stroke: 'var(--ifm-color-content-secondary)', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, g);
+      return { g, l: mk('text', { class: 'l', y: -20 }, g) as SVGTextElement, pos: 0, s: 'move', passed: {}, rej: false, doRej: false };
     }
 
     function label(k: Token) {
-      const v: Record<string, string> = { wait: 'chờ duyệt', back: 'concerns', fix: 'đang sửa' };
+      const v: Record<string, string> = { wait: 'review', back: 'concerns', fix: 'fixing' };
       if (v[k.s]) return v[k.s];
-      if (k.pos > END) return 'ticket mới';
+      if (k.pos > END) return 'new ticket';
       if (k.pos > gates[2].stop + 20) return 'done';
       return 'in progress';
     }
@@ -105,11 +105,11 @@ export default function AdlcLine(): React.JSX.Element {
 
     const tokens: Token[] = [0, 1, 2].map(function (i) {
       const k = TK();
-      k.pos = i * L / 3;
+      k.pos = (i * L) / 3;
       k.s = 'move';
       k.passed = {};
       k.rej = false;
-      k.doRej = (i === 1);
+      k.doRej = i === 1;
       return k;
     });
 
@@ -151,7 +151,7 @@ export default function AdlcLine(): React.JSX.Element {
             if (k.doRej && k.gi === 1 && !k.rej) {
               k.s = 'back';
               k.rej = true;
-              k.tgt = gates[0].stop + DX + 10;
+              k.tgt = gates[0].stop + DX;
             } else {
               k.s = 'open';
               k.tm = 0.3;
@@ -168,16 +168,9 @@ export default function AdlcLine(): React.JSX.Element {
             k.s = 'fix';
             k.tm = 1.1;
           }
-        } else if (k.s === 'fix') {
+        } else {
           k.tm = (k.tm ?? 0) - dt;
-          if (k.tm <= 0) {
-            k.s = 'move';
-          }
-        } else if (k.s === 'open') {
-          k.tm = (k.tm ?? 0) - dt;
-          if (k.tm <= 0) {
-            k.s = 'move';
-          }
+          if (k.tm <= 0) k.s = 'move';
         }
         place(k);
       });
@@ -185,7 +178,7 @@ export default function AdlcLine(): React.JSX.Element {
       gates.forEach(function (g) {
         if (g.t > 0) g.t -= dt;
         g.o += ((g.t > 0 ? 1 : 0) - g.o) * Math.min(1, dt * 9);
-        g.el.setAttribute('y2', String(Y - (Y - 112) * g.o));
+        g.el.setAttribute('y2', String(Y - (Y - 92) * g.o));
       });
 
       animId = requestAnimationFrame(frame);
@@ -199,13 +192,13 @@ export default function AdlcLine(): React.JSX.Element {
   }, []);
 
   return (
-    <section className="adlc-line" aria-label="Dây chuyền ADLC">
+    <section className="adlc-line" aria-label="ADLC pipeline">
       <div className="scroll">
         <svg
           ref={svgRef}
-          viewBox="0 0 1200 300"
+          viewBox="0 0 1240 230"
           role="img"
-          aria-label="Ticket đi qua 7 trạm ADLC; ba cổng đỏ cần người duyệt, ticket có thể bị trả về để sửa">
+          aria-label="Tickets move through 7 ADLC stages; three red gates need a human approval and a ticket can be sent back for fixes">
           <g ref={staticRef} id="static" />
           <g ref={gatesRef} id="gates" />
           <g ref={tokensRef} id="tokens" />
