@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600;700&family=Overpass:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Material+Icons&display=block');
+
+/**
+ * Vanguard Spec Theme
+ * Primary brand color: #e74539
+ * Font base: Overpass
+ * Font mono / headings: Overpass Mono
+ */
+
+:root {
+  --ifm-font-family-base: 'Overpass', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'Overpass Mono', monospace;
+  --ifm-heading-font-family: 'Overpass', system-ui, -apple-system, sans-serif;
+
+  /* Vanguard Brand Color Palette (#e74539) */
+  --ifm-color-primary: #e74539;
+  --ifm-color-primary-dark: #d03e33;
+  --ifm-color-primary-darker: #c53b30;
+  --ifm-color-primary-darkest: #a23028;
+  --ifm-color-primary-light: #eb5e54;
+  --ifm-color-primary-lighter: #ee6b62;
+  --ifm-color-primary-lightest: #f3928b;
+  --red-soft: rgba(231, 69, 57, 0.12);
+
+  --ifm-code-font-size: 92%;
+  --docusaurus-highlighted-code-line-bg: rgba(231, 69, 57, 0.1);
+
+  /* Light Theme Colors */
+  --ifm-background-color: #f5f3f4;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-navbar-background-color: #f5f3f4;
+  --ifm-navbar-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+  --ifm-footer-background-color: #202124;
+  --ifm-font-color-base: #161a1d;
+  --ifm-color-content-secondary: #5f6368;
+  --ifm-toc-border-color: #dadce0;
+  --ifm-hr-border-color: #dadce0;
+  --ifm-card-background-color: #ffffff;
+
+  --ifm-button-border-radius: 4px;
+  --ifm-global-radius: 6px;
+}
+
+/* Dark Theme Colors */
+[data-theme='dark'] {
+  --ifm-font-family-base: 'Overpass', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'Overpass Mono', monospace;
+  --ifm-heading-font-family: 'Overpass', system-ui, -apple-system, sans-serif;
+
+  --ifm-color-primary: #f0877d;
+  --ifm-color-primary-dark: #ec6f63;
+  --ifm-color-primary-darker: #ea6356;
+  --ifm-color-primary-darkest: #e53e2e;
+  --ifm-color-primary-light: #f49f97;
+  --ifm-color-primary-lighter: #f6aba4;
+  --ifm-color-primary-lightest: #fbcfcb;
+  --red-soft: rgba(240, 135, 125, 0.16);
+
+  /* Vanguard OSV-derived Dark Backgrounds */
+  --ifm-background-color: #292929;
+  --ifm-background-surface-color: #202020;
+  --ifm-navbar-background-color: #292929;
+  --ifm-navbar-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --ifm-footer-background-color: #202020;
+  --ifm-font-color-base: #ffffff;
+  --ifm-color-content-secondary: #9aa0a6;
+  --ifm-toc-border-color: #404040;
+  --ifm-hr-border-color: #404040;
+  --ifm-card-background-color: #202020;
+
+  --docusaurus-highlighted-code-line-bg: rgba(240, 135, 125, 0.15);
+}
+
+/* Headings font styling */
+h1, h2, h3, h4, h5, h6,
+.hero__title {
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Navbar customization to match Vanguard */
+.navbar {
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  padding: 0.75rem 2rem;
+}
+
+.navbar__brand {
+  margin-right: 2rem;
+}
+
+.navbar__logo {
+  height: 32px;
+  width: auto;
+}
+
+.navbar__title,
+.navbar__brand b {
+  font-weight: var(--ifm-font-weight-semibold);
+  font-size: var(--ifm-navbar-link-font-size, 1rem);
+  letter-spacing: normal;
+}
+
+/* Link and Button styling */
+.button--primary,
+.hero--primary .button--secondary {
+  background-color: #e74539 !important;
+  color: #ffffff !important;
+  border-color: #e74539 !important;
+  font-family: 'Overpass', sans-serif;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.button--primary:hover,
+.hero--primary .button--secondary:hover {
+  background-color: #d03e33 !important;
+  border-color: #d03e33 !important;
+  opacity: 0.95;
+}
+
+/* Hero Section */
+.hero--primary {
+  background-color: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
+
+[data-theme='dark'] .hero--primary {
+  background-color: #292929;
+}
+
+.hero__title {
+  font-size: 2.75rem;
+  color: var(--ifm-font-color-base);
+}
+
+.hero__subtitle {
+  font-size: 1.35rem;
+  color: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-base);
+}
+
+/* Badges / Tags */
+.badge--vanguard {
+  background-color: #e74539;
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'Overpass Mono', monospace;
+}
+
+/* Search Box Styling */
+.navbar__search-input {
+  border-radius: 4px;
+  font-family: 'Overpass', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.navbar__search-input:focus {
+  border-color: #e74539 !important;
+  box-shadow: 0 0 0 2px rgba(231, 69, 57, 0.2) !important;
+}
+
+[data-theme='dark'] .navbar__search-input {
+  background-color: #202020;
+  border: 1px solid #404040;
+  color: #ffffff;
+}
+
+[data-theme='light'] .navbar__search-input {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  color: #161a1d;
+}
+
+/* Footer Styling - Clean Monochrome & Brand Accent */
+.footer,
+.footer--dark {
+  background-color: #1a1a1a !important;
+  border-top: 1px solid var(--ifm-toc-border-color);
+  color: #bdc1c6 !important;
+  --ifm-footer-background-color: #1a1a1a;
+  --ifm-footer-color: #bdc1c6;
+  --ifm-footer-link-color: #bdc1c6;
+  --ifm-footer-link-hover-color: #e74539;
+  --ifm-footer-title-color: #ffffff;
+  padding: 3rem 0 2rem;
+}
+
+[data-theme='light'] .footer,
+[data-theme='light'] .footer--dark {
+  background-color: #161a1d !important;
+  border-top: 1px solid #dadce0;
+}
+
+.footer__title {
+  color: #ffffff !important;
+  font-family: var(--ifm-heading-font-family);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.footer__link-item {
+  color: #bdc1c6 !important;
+  font-family: 'Overpass', sans-serif;
+  transition: color 0.2s ease;
+}
+
+.footer__link-item:hover {
+  color: #e74539 !important;
+  text-decoration: none;
+}
+
+.footer__copyright {
+  color: #80868b !important;
+  font-size: 0.85rem;
+  margin-top: 2rem;
+}
+
+/* ===== DÂY CHUYỀN ADLC ===== */
+.adlc-line {
+  padding: 44px 16px 48px;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  background-color: var(--ifm-background-color);
+}
+.adlc-line .scroll {
+  max-width: 1240px;
+  margin: 0 auto;
+  overflow-x: auto;
+}
+.adlc-line svg {
+  display: block;
+  min-width: 920px;
+  width: 100%;
+  height: auto;
+}
+.adlc-line .rail {
+  stroke: var(--ifm-toc-border-color);
+  stroke-width: 2;
+  fill: none;
+}
+.adlc-line .back {
+  stroke-dasharray: 3 7;
+  stroke-linecap: round;
+}
+.adlc-line .chev {
+  fill: none;
+  stroke: var(--ifm-toc-border-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.adlc-line .st rect {
+  fill: var(--ifm-background-color);
+  stroke: var(--ifm-color-content-secondary);
+  stroke-width: 1.5;
+}
+.adlc-line .st.h rect {
+  stroke: var(--ifm-color-primary);
+}
+.adlc-line .ic {
+  fill: none;
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.adlc-line .st.h .ic {
+  stroke: var(--ifm-color-primary);
+}
+.adlc-line .nm {
+  fill: var(--ifm-font-color-base);
+  font-family: var(--ifm-font-family-base);
+  font-weight: 600;
+  font-size: 15px;
+  text-anchor: middle;
+}
+.adlc-line .sub {
+  fill: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 11px;
+  text-anchor: middle;
+}
+.adlc-line .st.h .sub {
+  fill: var(--ifm-color-primary);
+}
+.adlc-line .gate {
+  stroke: var(--ifm-color-primary);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.adlc-line .badge {
+  fill: var(--ifm-background-color);
+  stroke: var(--ifm-color-primary);
+  stroke-width: 1.5;
+}
+.adlc-line .pp {
+  fill: none;
+  stroke: var(--ifm-color-primary);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.adlc-line .ppd {
+  fill: var(--ifm-color-primary);
+}
+.adlc-line .tk rect {
+  fill: var(--ifm-background-color);
+  stroke: var(--ifm-font-color-base);
+  stroke-width: 1.6;
+}
+.adlc-line .tk.w rect {
+  stroke: var(--ifm-color-primary);
+  fill: var(--red-soft);
+}
+.adlc-line .tk .l {
+  fill: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 10.5px;
+  text-anchor: middle;
+}
+.adlc-line .tk.w .l {
+  fill: var(--ifm-color-primary);
+}
+.adlc-line .cap {
+  fill: var(--ifm-color-content-secondary);
+  font-family: var(--ifm-font-family-base);
+  font-size: 13px;
+  text-anchor: middle;
+}
