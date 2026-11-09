@@ -225,7 +225,7 @@ h1, h2, h3, h4, h5, h6,
 
 /* ===== DÂY CHUYỀN ADLC ===== */
 .adlc-line {
-  padding: 44px 16px 48px;
+  padding: 36px 16px 48px;
   border-bottom: 1px solid var(--ifm-toc-border-color);
   background-color: var(--ifm-background-color);
 }
