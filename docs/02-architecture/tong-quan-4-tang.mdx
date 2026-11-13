@@ -13,7 +13,7 @@ flowchart TB
     L1["Tầng 1 · INTERFACE — Nguồn công việc<br/>IDE · Git · CI/CD · Chatbot · Jira · Slack"]
     L2["Tầng 2 · WORKFLOW — Control plane<br/>State machine · Factory registry · Cổng duyệt · Wave/Gate"]
     L3["Tầng 3 · HARNESS — Agent core, công cụ & tri thức<br/>Core runtime · Task loop contract · Memory bridge · Vault · Plugin server<br/>Gitea · Cognee · TestForge · Steel · Playwright/k6"]
-    L4["Tầng 4 · SANDBOX — Thực thi cô lập<br/>Broker · VFS · Provisioner · Warm pool · Runners"]
+    L4["Tầng 4 · SANDBOX — Thực thi cô lập<br/>Broker · VFS · Sandbox cách ly"]
     L1 --> L2 --> L3 --> L4
 ```
 
@@ -27,7 +27,7 @@ flowchart TB
 - **Tầng 3 — Harness:** bộ não — agent core, công cụ & tri thức; hệ sinh thái plugin con.
   Chi tiết: [Tầng 3](/docs/architecture/tang-3-harness/tong-quan-harness).
 - **Tầng 4 — Sandbox:** thực thi cô lập, mở rộng ngang. Chi tiết:
-  [Tầng 4](/docs/architecture/tang-4-sandbox).
+  [Tầng 4](/docs/architecture/tang-4-sandbox/tong-quan).
 
 ## Các tầng nối vào nhau thế nào
 

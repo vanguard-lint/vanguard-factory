@@ -1,0 +1,50 @@
+---
+title: Tầng 4 — Sandbox
+description: Kiến trúc tầng sandbox — broker, VFS, sandbox cách ly.
+sidebar_position: 2
+---
+
+# Tầng 4 · Sandbox — thực thi cô lập
+
+> Grounded vào mã nguồn `sandbox-kit` (branch `feat/sandbox`).
+
+```mermaid
+flowchart LR
+    AGENT["Agent / Dashboard"] -->|"REST"| BROKER["BROKER<br/>quản lý phiên · chính sách lệnh"]
+    BROKER --> VFS["VFS<br/>tệp dự án"]
+    BROKER -->|"thực thi"| EXECD["execd — bên trong sandbox"]
+    SUB["OPEN SANDBOX LIFECYCLE SERVER"] -.->|"cấp sandbox"| EXECD
+    DASH["DASHBOARD"] -.-> BROKER
+```
+
+## Ba khác biệt cốt lõi
+
+1. **Mã nguồn nằm riêng** — tệp sống trong VFS; phiên chỉ là môi trường thực thi.
+2. **Kiểm soát tập trung** — mọi thao tác qua broker, lệnh bị lọc bởi command policy.
+3. **Thay đổi qua dòng Git có phân vai** — agent chỉ push nhánh `agent-*`; merge do người
+   duyệt.
+
+## Luồng E2E của một lệnh
+
+Nhận yêu cầu → kiểm tra command policy → thực thi cách ly trong sandbox → trả kết quả
+(stdout · stderr · exit code · thời lượng) và ghi event log.
+
+## Các trang trong mục này
+
+| Trang | Nội dung |
+|---|---|
+| [Tổng quan](/docs/architecture/tang-4-sandbox/gioi-thieu) | Sandbox Kit là gì, giải quyết vấn đề gì, khái niệm chính |
+| [Broker](/docs/architecture/tang-4-sandbox/broker) | Cổng REST, chính sách lệnh, vòng đời phiên tự động |
+| [VFS](/docs/architecture/tang-4-sandbox/vfs) | Tệp dự án độc lập phiên, dòng Git phân vai |
+| [OpenSandbox server](/docs/architecture/tang-4-sandbox/opensandbox-server) | Cấp sandbox cách ly, cấu hình tài nguyên |
+| [Dashboard & CLI](/docs/architecture/tang-4-sandbox/dashboard-cli) | Quản trị phiên, tích hợp agent |
+
+:::info Hướng dẫn sử dụng
+Các bước vận hành xem tại [HDSD Sandbox Kit](/docs/user-guides/sandbox-kit/gioi-thieu):
+[Cài đặt](/docs/user-guides/sandbox-kit/cai-dat) ·
+[Tạo & quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien) ·
+[Đồng bộ tệp VFS](/docs/user-guides/sandbox-kit/dong-bo-vfs) ·
+[Review diff & merge](/docs/user-guides/sandbox-kit/review-diff) ·
+[Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi).
+Chi tiết bảo mật nhiều lớp: [Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop).
+:::

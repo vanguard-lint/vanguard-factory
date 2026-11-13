@@ -1,0 +1,35 @@
+---
+title: Broker
+description: Cổng REST duy nhất — quản lý phiên, chính sách lệnh, vòng đời tự động.
+sidebar_position: 3
+---
+
+# Broker — cổng REST duy nhất
+
+## Vai trò
+
+- Mọi thao tác với tầng sandbox đi qua broker — không có đường vào trực tiếp sandbox.
+- Cấp/quản lý phiên, proxy VFS, thực thi action trong sandbox.
+- Thực thi **chính sách lệnh** trước khi lệnh tới sandbox.
+- Trước broker có HAProxy — health check `GET /health`.
+
+## Chính sách lệnh (command policy)
+
+- **Chặn hẳn** — lệnh phá hoại (`rm /`, `dd of=/dev/`, `mkfs`, `shutdown`...) và một phần
+  lệnh ghi tệp (`touch`, `tee`, `truncate`).
+- **Chỉ cảnh báo** — `cp`, `mv`, `mkdir`... vẫn chạy kèm cảnh báo trong kết quả.
+
+## Vòng đời phiên tự động
+
+- **Vòng đời**: `STANDBY` (tạo trước, chưa start) → `STARTING` → `RUNNING` → `PAUSED` →
+  terminate.
+- **Reaper** — phiên hết TTL bị huỷ tự động; phiên tạm dừng không bao giờ hết hạn.
+- **Orphan sweeper** — dọn định kỳ sandbox không còn metadata.
+- **Lưu trạng thái** — broker ghi snapshot phiên định kỳ; restart không mất phiên sống,
+  phiên chết được dọn sạch.
+
+## Liên kết
+
+- Sử dụng broker: [Tạo & quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien)
+- Trần tài nguyên: [Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi)
+- Bảo mật nhiều lớp: [Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop)

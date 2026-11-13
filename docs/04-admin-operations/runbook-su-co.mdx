@@ -30,9 +30,9 @@ thành phần lỗi: [Phụ thuộc & sức khỏe](/docs/admin-operations/monit
 - **Chẩn đoán:** log broker/metrics tài nguyên; phiên nào chiếm nhiều.
 - **Xử lý:** dừng phiên dư thừa; chạy lại task trên phiên mới; xem xét tăng hạn ngạch cho loại
   task nặng.
-- **Phòng ngừa:** cấu hình giới hạn tài nguyên mỗi phiên
-  ([Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen)); warm pool đủ kích
-  thước.
+- **Phòng ngừa:** cấu hình giới hạn tài nguyên mỗi phiên (cpu/memory/ttl đặt khi cấp phiên —
+  xem [Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi));
+  tăng `ttl` hoặc gọi `renew` cho task dài.
 
 ## RB-04 · 401 hàng loạt sau restart DSH
 

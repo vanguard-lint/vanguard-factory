@@ -1,0 +1,41 @@
+---
+title: Tài nguyên & vòng đời phiên
+description: Đặt giới hạn tài nguyên, gia hạn, xử lý phiên bị huỷ.
+sidebar_position: 6
+---
+
+# Tài nguyên & vòng đời phiên
+
+## Giá trị đặt khi cấp phiên
+
+| Tham số | Mặc định | Ghi chú |
+|---|---|---|
+| `cpu` | `"2"` | Trần CPU mỗi phiên |
+| `memory` | `"4Gi"` | Trần bộ nhớ mỗi phiên |
+| `ttl` | `3600` | Giây — hết hạn phiên tự bị huỷ; đặt `<= 0` để không tự huỷ |
+| `timeout` (mỗi lệnh) | `300` | Giây — tối đa 1800s |
+
+## Gia hạn / giữ phiên
+
+- **Task dài hơn dự kiến** → `POST /api/v1/management/sessions/{id}/renew` với `{ttl}` mới.
+- **Tạm dừng giữ nguyên môi trường** → `pause`; phiên tạm dừng không bị huỷ theo TTL, chạy lại
+  bằng `resume`.
+- **Nạp tệp lớn từ máy chủ** → tối đa 20.000 file / 64MB mỗi file, chỉ từ thư mục khai báo
+  trong `HOST_PROJECT_ROOTS`.
+
+## Lệnh bị chặn / cảnh báo
+
+| Loại | Ví dụ | Kết quả |
+|---|---|---|
+| Chặn hẳn | `rm /`, `dd of=/dev/`, `mkfs`, `shutdown`, `touch`, `tee` | Từ chối trước khi chạy |
+| Chỉ cảnh báo | `cp`, `mv`, `mkdir` | Vẫn chạy, kết quả kèm cảnh báo |
+
+## Kết quả đúng phải thấy
+
+- Phiên hết TTL bị huỷ tự động; phiên `pause` tồn tại vô hạn cho tới khi resume/thu hồi.
+- Lệnh bị chặn không chạy, trả lỗi rõ ràng.
+- Gia hạn `renew` xong, phiên sống thêm đúng số giây mới.
+
+## Liên kết
+
+- API phiên: [Tạo & quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien)

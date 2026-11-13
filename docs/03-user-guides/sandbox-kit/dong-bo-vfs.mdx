@@ -1,0 +1,62 @@
+---
+title: Đồng bộ tệp VFS
+description: Đọc/ghi tệp và dòng Git với workspace — qua broker REST.
+sidebar_position: 4
+---
+
+# Đồng bộ tệp VFS
+
+Tất cả thao tác tệp qua broker tại `/api/v1/vfs/*`, xác thực bằng token như trang
+[Quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien).
+
+## Đọc / ghi tệp
+
+| Thao tác | REST |
+|---|---|
+| Ghi file | `POST /file/write` — `{workspace_id, path, content}` |
+| Đọc file | `GET /file/read?workspace_id&path` |
+| Sửa file | `POST /file/edit` — `{workspace_id, path, edits:[{oldText, newText}]}` |
+| Xoá file | `DELETE /file?workspace_id&path&recursive` |
+| Liệt kê | `GET /files?workspace_id` · `GET /manifest` · `GET /workspaces` |
+
+Lưu ý: tệp tạm (`/scratch/*`, `/tmp/*`) không lưu được vào VFS.
+
+## Dòng Git
+
+```bash
+# 1. Clone repo vào workspace
+curl -X POST http://<broker-url>/api/v1/vfs/git/clone \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"workspace_id": "<ws>", "url": "<repo-url>", "branch": "main", "role": "agent"}'
+
+# 2. Xem thay đổi
+curl "http://<broker-url>/api/v1/vfs/git/status?workspace_id=<ws>"
+
+# 3. Tạo nhánh làm việc
+curl -X POST http://<broker-url>/api/v1/vfs/git/branch \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"workspace_id": "<ws>", "branch": "agent-<ten>", "role": "agent"}'
+
+# 4. Commit + push (một lần)
+curl -X POST http://<broker-url>/api/v1/vfs/git/sync \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"workspace_id": "<ws>", "message": "<noi-dung>", "role": "agent"}'
+```
+
+## Quy tắc bắt buộc
+
+- **Role `agent` chỉ được push nhánh `agent-*`** — vi phạm bị từ chối 403.
+- `git/pull` (merge về nhánh hiện tại) chỉ dành cho **human**.
+- Commit/push chỉ xảy ra khi bạn gọi — hệ thống không tự động.
+- Token Git lấy từ biến môi trường của VFS service (Gitea/GitHub), không truyền tay trong
+  lệnh hằng ngày.
+
+## Kết quả đúng phải thấy
+
+- File ghi/sửa xuất hiện ngay trong `GET /git/status`.
+- Push nhánh khác `agent-*` (với role agent) bị từ chối 403.
+- Không có commit/push nào xảy ra nếu bạn không gọi endpoint.
+
+## Liên kết
+
+- Merge & duyệt: [Review diff & merge](/docs/user-guides/sandbox-kit/review-diff)
