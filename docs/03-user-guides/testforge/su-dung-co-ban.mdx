@@ -1,0 +1,144 @@
+---
+title: Sử dụng cơ bản — đầu vào, explore, replay
+description: Chuẩn bị Standard Test Input, chạy explore, đọc bằng chứng, replay và đọc Promotion Gate.
+sidebar_position: 7
+sidebar_label: 6 · Sử dụng cơ bản
+---
+
+# Sử dụng cơ bản
+
+Chuỗi tối thiểu để có một lượt chạy hợp lệ:
+
+```text
+Input 5 trường → Explore → Replay → Promotion Gate → Quyết định
+```
+
+## 1. Standard Test Input
+
+Năm trường **bắt buộc**:
+
+| Trường | Nội dung | Lưu ý |
+|---|---|---|
+| `function_id` | Định danh chức năng/testcase | Giữ ổn định; dùng để tra thư viện |
+| `feature` | Tên chức năng | Dùng tìm kiếm, **không** phải căn cứ truy vết |
+| `precondition` | Điều kiện trước | Quyền, trạng thái dữ liệu, đăng nhập |
+| `steps` | Các bước | Phải có ít nhất một phần tử |
+| `expected_result` | Kết quả mong đợi | Phải có ít nhất một phần tử; đây là **oracle** |
+
+`business_rules` và `validation_rules` là tùy chọn theo schema. **Không** gửi trường tự phát ngoài hợp đồng.
+
+```json
+{
+  "function_id": "FUNC-GUIDE-PT-LIST",
+  "feature": "Xem danh sách phát động Phong trào",
+  "precondition": [
+    "Người dùng đăng nhập thành công",
+    "Người dùng có quyền Quản lý Phong trào"
+  ],
+  "steps": [
+    "Truy cập menu [Phong trào]"
+  ],
+  "expected_result": [
+    "Hệ thống hiển thị màn hình Danh sách Phong trào"
+  ]
+}
+```
+
+Lưu bằng UTF-8 tại `artifacts/inputs/FUNC-GUIDE-PT-LIST.json`.
+
+:::tip Oracle phải "đo được"
+Với thao tác thêm mới, `expected_result` cần chỉ rõ **dấu hiệu thành công** và **dữ liệu được lưu/đọc lại**. Mỗi lỗi validation cần một testcase riêng với dữ liệu và thông báo mong đợi cụ thể — không dùng một bước "nhập hợp lệ" cho mọi tổ hợp.
+:::
+
+### Chuẩn bị dữ liệu và tài khoản
+
+1. Chọn môi trường thử, vai trò và tài khoản đúng quyền.
+2. Đặt **tiền tố dữ liệu duy nhất** cho mỗi run; xác định trước phạm vi ghi/sửa/xóa.
+3. Chỉ cấp `cleanup_template` sau khi đã duyệt route `DELETE` và xác minh ID thuộc lượt chạy. Bỏ trống khi chưa có hợp đồng cleanup.
+4. Cấp mật khẩu qua **biến môi trường**; không đưa mật khẩu vào JSON 5 trường.
+
+Đầu vào tự nhiên cần QA duyệt, nhất là với phê duyệt, gửi báo cáo, import/export và thao tác xóa.
+
+## 2. Chạy Explore
+
+```powershell
+$py = '.\.venv\Scripts\python.exe'
+& $py scripts/run_explorer.py `
+  --input-json artifacts/inputs/FUNC-GUIDE-PT-LIST.json `
+  --base-url http://10.0.10.195:3011 `
+  --api-url http://10.0.10.195:17004 `
+  --email '<tai-khoan-test>' --actor qa `
+  --password-env TNQD_ADMIN_PASSWORD `
+  --video --headed --slowmo 300
+```
+
+`--base-url` là **UI**, `--api-url` là **API root** phù hợp với adapter đăng nhập.
+
+| Cờ | Khi nào dùng |
+|---|---|
+| `--headed` | Quan sát trực tiếp; bỏ khi chạy headless |
+| `--video` | Cần bằng chứng hình ảnh chuyển động |
+| `--no-llm` | Chỉ dùng PatternNavigator, để phân biệt lỗi rule với lỗi provider |
+| `--step-deadline-ms` | Mặc định 20.000; chỉ tăng khi có bằng chứng ứng dụng cần chờ |
+| `--total-deadline-ms` | Mặc định 600.000 |
+| `--hitl` | Bật human-in-the-loop khi luồng cần người xác nhận |
+
+:::warning Không nới deadline để che lỗi
+Tăng timeout chỉ hợp lệ khi có bằng chứng ứng dụng cần chờ. Dùng nó để "cho qua" locator hoặc oracle sai là làm hỏng chính bài test.
+:::
+
+### Đọc artifact EXPLORE
+
+| Artifact | Cách dùng |
+|---|---|
+| `session_summary.json` | `run_id`, trạng thái, coverage, lỗi, provenance |
+| `trace.jsonl` | Từng bước, action/locator, lần thử, trạng thái, network event |
+| Thư mục từng step | Ảnh giao diện và dữ liệu quan sát tại thời điểm chạy |
+| `input.feature` | Yêu cầu đã chuyển sang Gherkin |
+| `video/` | WebM khi bật `--video` và context đóng thành công |
+| `owned.json` | Tài nguyên phát sinh, phục vụ quản lý dữ liệu thử |
+
+Nếu `PARTIAL` hoặc `FAILED`, mở **đúng bước và lỗi** trước khi replay.
+
+:::note GROUNDED là gì?
+`GROUNDED` cho biết bước đã được liên kết với thao tác/đối chiếu thật trên UI. Chỉ số này phải đọc **cùng oracle và gate** — ảnh một form đã điền **không** phải bằng chứng dữ liệu đã được lưu.
+:::
+
+## 3. Replay và Promotion Gate
+
+Lấy mã `EXPLORE` từ kết quả vừa chạy — không dùng session gần nhất của chức năng khác.
+
+```powershell
+& $py scripts/replay_spec.py `
+  --session artifacts/automation/exploration/EXPLORE-<id> `
+  --api-url http://10.0.10.195:17004 `
+  --email '<tai-khoan-test>' `
+  --password-env TNQD_ADMIN_PASSWORD --heal
+```
+
+Replay tạo **trạng thái đăng nhập mới** và tổng hợp script từ trace. `--heal` bật phục hồi cho lỗi test đủ điều kiện.
+
+Đọc `synthesis/promotion.json`, script và kết quả replay. Exit code `0` **chỉ** khi được promote; không chỉ dựa vào dòng Playwright PASS.
+
+| Trạng thái | Diễn giải | Hành động |
+|---|---|---|
+| Replay PASS | Các assertion trong script đã đạt | Kiểm tiếp coverage và oracle của hợp đồng |
+| `PARTIAL` | Chưa đủ grounding hoặc gate còn blocker | Xác định bước/Then chưa kiểm chứng |
+| `Promoted true` | Mọi check hiện áp dụng đều true | Xem provenance và phạm vi trước khi nhận vào suite |
+| `HEALED_PASS` | Bản sửa đã retest đạt trong vòng healing | Vẫn phải qua gate cuối |
+| `APPLICATION_DEFECT` | Lỗi ứng dụng | **Dừng tự sửa**; lập defect với bước tái hiện + evidence |
+| `ERROR` / discovery lỗi | Runtime, dependency, cấu hình chưa sẵn sàng | Xử lý môi trường trước khi đánh giá nghiệp vụ |
+
+:::danger Không hạ assertion để tăng tỷ lệ đạt
+Không xóa check, không nới oracle, không đổi `expected_result` để test xanh. Nếu gate chặn, sửa **bài test hoặc ứng dụng**, không sửa **định nghĩa đúng**.
+:::
+
+### API/DB verification
+
+Cần cấu hình riêng. Một tầng `SKIPPED` **không** có nghĩa đã truy vấn dữ liệu độc lập.
+
+## Liên kết
+
+- [Điều phối nhiều chức năng và API](./dieu-phoi-va-api)
+- [Kiểm thử hiệu năng](./kiem-thu-hieu-nang)
+- [Hồi quy và impact](./hoi-quy-impact)

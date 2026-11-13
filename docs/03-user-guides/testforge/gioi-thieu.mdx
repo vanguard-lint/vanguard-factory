@@ -56,12 +56,25 @@ PASS / PASS_WITH_WARNING / FAIL — áp dụng override phải ghi người phê
 PASS/FAIL từng testcase · log, ảnh, trace khi phát sinh · mã lần chạy để đối chiếu · video khi có.
 Khi FAIL: dùng log + bằng chứng để xác minh **trước khi** chấp nhận thay đổi.
 
-## Nội dung sẽ bổ sung
+## Bộ hướng dẫn đầy đủ
 
-- [ ] Cài đặt/kết nối TestForge API
-- [ ] Ví dụ end-to-end đầy đủ (đầu vào → kế hoạch → chạy → báo cáo)
-- [ ] Cấu hình ngưỡng và profile tải
-- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+| Trang | Nội dung |
+|---|---|
+| [1 · Kiến trúc](./kien-truc) | Thành phần, luồng dữ liệu, Promotion Gate, ranh giới tự phục hồi |
+| [2 · Cài đặt](./cai-dat) | Windows, Linux, chạy Broker cục bộ, kiểm tra sau cài |
+| [3 · Cấu hình](./cau-hinh) | Biến môi trường, tài khoản SUT, LLM, quản lý bí mật |
+| [4 · Triển khai Docker](./trien-khai-docker) | Build image, volume, mạng, nghiệm thu, quay lui |
+| [5 · Cognee](./cognee) | Recall ngữ cảnh, đối chiếu tài liệu, compose 5 trường |
+| [6 · Sử dụng cơ bản](./su-dung-co-ban) | Standard Test Input, explore, replay, đọc gate |
+| [7 · Điều phối & API](./dieu-phoi-va-api) | Batch nhiều chức năng, HTTP API, plugin |
+| [8 · Hiệu năng](./kiem-thu-hieu-nang) | Profile k6, ngưỡng, đọc kết quả, recommendation |
+| [9 · Hồi quy & Impact](./hoi-quy-impact) | Staging suite, chọn test theo thay đổi SUT |
+| [10 · Vận hành & sự cố](./van-hanh-su-co) | Theo dõi, sao lưu, retention, tra sự cố |
+| [11 · Tham chiếu](./tham-chieu) | Cấu trúc thư mục, artifact, biến, endpoint, bàn giao |
+
+:::note Phạm vi tài liệu
+Bộ hướng dẫn đối chiếu DOCX 1.0 (mốc `be6ef54`) và source trên server `10.0.10.195` (HEAD `8a0653a`). Module **impact** và các endpoint `gherkin`, `bugbash`, `cancel` chỉ có trong source mới hơn — đã được ghi rõ tại trang tương ứng.
+:::
 
 ## Liên kết
 

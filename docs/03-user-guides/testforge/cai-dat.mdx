@@ -1,0 +1,173 @@
+---
+title: Cài đặt môi trường thực thi
+description: Cài TestForge trên Windows hoặc Linux, chạy Broker cục bộ và kiểm tra trước khi dùng.
+sidebar_position: 3
+sidebar_label: 2 · Cài đặt
+---
+
+# Cài đặt môi trường thực thi
+
+Có ba lối cài: **Windows (phát triển)**, **Linux trực tiếp (máy chủ)** và **Docker** ([trang riêng](./trien-khai-docker)). Trang này đi hai lối đầu.
+
+:::warning Hai bộ Playwright là hai chuyện khác nhau
+Playwright **Python** dùng cho `run_explorer.py` và đăng nhập; Playwright **Node** dùng cho replay TypeScript. Cài thư viện Python **không** bảo đảm replay chạy được. Khi đổi phiên bản package, phải cài lại Chromium bằng đúng công cụ.
+:::
+
+## Điều kiện và kiểm tra trước cài đặt
+
+| Phụ thuộc | Mốc trong mã nguồn | Kiểm tra |
+|---|---|---|
+| Python | 3.12 trở lên; image dùng `3.12-slim` | `python --version` |
+| Python packages | `jsonschema`, `pytest`, `langgraph`, `playwright`, `fastapi`, `uvicorn`, `httpx` | `python -m pip check` |
+| Node và npm | Dockerfile dùng Node 20; cần cho replay TypeScript | `node --version`, `npm --version` |
+| Playwright Python | Cần cho explore và đăng nhập | `python -m playwright --version` |
+| Playwright Node | `@playwright/test` trong `package.json` | `npx playwright --version` |
+| k6 | Bắt buộc cho Agent 2; image tham chiếu v2.3.0 linux-amd64 | `k6 version` |
+| Docker Compose | Chỉ cho lối container | `docker compose version` |
+| Cognee và LLM | Cần khi recall → compose; **không** bắt buộc khi dùng file đã duyệt | Gọi recall/compose riêng |
+
+:::note Về `requirements.lock.txt`
+File lock có trong image nhưng Dockerfile thực tế cài `requirements.txt`. **Không** coi lock là cơ chế pin đang được áp dụng.
+:::
+
+Bố trí CPU/RAM/đĩa theo số browser, số VU, thời lượng tải và thời hạn giữ ảnh/video. Khi đo năng lực hệ thống, **tách máy sinh tải khỏi SUT**; nếu dùng chung máy phải ghi rõ ảnh hưởng tài nguyên.
+
+## Cài trên Windows
+
+### 1. Môi trường Python
+
+```powershell
+Set-Location 'D:\VTS\TestAgent\testforge-ai'
+py -3.12 -m venv .venv
+$py = '.\.venv\Scripts\python.exe'
+& $py -m pip install --upgrade pip
+& $py -m pip install -r requirements.txt
+& $py -m playwright install chromium
+```
+
+Các lệnh sau gọi interpreter bằng đường dẫn trực tiếp, không phụ thuộc việc kích hoạt venv.
+
+### 2. Runtime Node
+
+```powershell
+npm ci
+npx playwright install chromium
+node --version
+npm --version
+```
+
+Giữ `package-lock.json` cùng bản mã được phát hành. Nếu `npm ci` báo lock không đồng bộ, xử lý trên bản phát triển trước khi đóng gói — **không** bỏ qua lock trên máy triển khai.
+
+### 3. k6
+
+```powershell
+$env:Path = 'C:\Tools\k6;' + $env:Path
+k6 version
+```
+
+Chưa có k6 vẫn nghiệm thu được luồng chức năng; bổ sung Agent 2 sau.
+
+### 4. Mốc hoàn thành
+
+```powershell
+& $py -m pip check
+& $py -c "import fastapi, httpx, jsonschema, langgraph"
+& $py scripts/run_explorer.py --help
+& $py scripts/replay_spec.py --help
+```
+
+Đạt khi: pip không báo thiếu phụ thuộc, hai CLI hiện help, Chromium khởi tạo được.
+
+## Khởi động Broker cục bộ
+
+Broker đọc phần lớn cấu hình **khi import module** — đổi biến môi trường phải **khởi động lại tiến trình**.
+
+Cửa sổ 1:
+
+```powershell
+Set-Location 'D:\VTS\TestAgent\testforge-ai'
+$py = '.\.venv\Scripts\python.exe'
+$secret = Read-Host 'Token Broker cục bộ' -AsSecureString
+$env:TESTFORGE_BROKER_TOKEN = [System.Net.NetworkCredential]::new(
+  '', $secret).Password
+$env:AGENT_MEMORY_API_URL = 'http://10.0.10.195:8002/v1'
+$env:TESTFORGE_JOB_TIMEOUT = '600'
+$env:TESTFORGE_EVIDENCE_BASE_URL = 'http://127.0.0.1:19099'
+& $py testforge_broker.py --host 127.0.0.1 --port 19099
+```
+
+Dùng cổng **19099** để tránh nhầm với Broker máy chủ ở **9099**.
+
+Cửa sổ 2 — kiểm tra:
+
+```powershell
+$broker = 'http://127.0.0.1:19099'
+Invoke-RestMethod "$broker/api/v1/health"
+(Invoke-WebRequest "$broker/api/v1/metrics").Content
+```
+
+`status=ok` là điều kiện Broker hoạt động. `agent_memory.reachable=true` **chỉ** chứng minh probe `/health` của Adapter trả 200 — chưa chứng minh dataset hay nội dung truy xuất đúng.
+
+:::warning Token không tự truyền giữa các cửa sổ
+Mật khẩu/token đặt ở cửa sổ 1 không sang cửa sổ 2. Đặt token phía client riêng, cùng giá trị với Broker. Không đưa **giá trị** mật khẩu vào `--password-env`; tham số đó chỉ nhận **tên biến**.
+:::
+
+Kết thúc bằng `Ctrl+C` sau khi các job đã hoàn tất.
+
+## Cài trực tiếp trên Linux
+
+Dành cho máy đã có Python, Node/npm và k6 phù hợp. Dùng tài khoản dịch vụ có quyền ghi `artifacts` và đọc cấu hình.
+
+```bash
+cd /opt/testforge-ai
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m playwright install --with-deps chromium
+npm ci
+npx playwright install chromium --with-deps
+.venv/bin/python -m pip check
+k6 version
+```
+
+Cài thư viện hệ điều hành của Chromium có thể cần quyền quản trị. Phần cài browser/package phải thuộc **tài khoản thực sự chạy Broker**; nếu cài bằng tài khoản khác, kiểm tra lại đường dẫn và quyền truy cập browser cache.
+
+Khởi động:
+
+```bash
+export AGENT_MEMORY_API_URL=http://10.0.10.195:8002/v1
+export TESTFORGE_EVIDENCE_BASE_URL=http://127.0.0.1:19099
+read -rs -p 'Broker token: ' TESTFORGE_BROKER_TOKEN
+echo
+export TESTFORGE_BROKER_TOKEN
+.venv/bin/python testforge_broker.py --host 127.0.0.1 --port 19099
+```
+
+### Chạy dài hạn
+
+Dùng systemd hoặc trình quản lý tiến trình của đơn vị:
+
+- `WorkingDirectory` trỏ đúng thư mục dự án.
+- `ExecStart` dùng interpreter trong venv.
+- `EnvironmentFile` là file được cấp quyền đọc hạn chế.
+- Chính sách restart có kiểm soát.
+
+:::warning Một worker
+`JobManager` giữ trạng thái job trong bộ nhớ **một tiến trình**. Không chạy nhiều Uvicorn worker nếu vẫn cần đọc nhất quán trạng thái job.
+:::
+
+Khi phục vụ từ xa, bind theo địa chỉ được duyệt và đặt proxy TLS/phân quyền phía trước.
+
+## Kiểm tra sau cài đặt
+
+| Bước | Lệnh | Đạt khi |
+|---|---|---|
+| 1 | `GET /api/v1/health` | `status=ok`, `interpreter` và `project_root` đúng |
+| 2 | Ghi thử một artifact | File xuất hiện trong `artifacts/` |
+| 3 | `POST /api/v1/fetch-testcase` | Recall trả chunk đúng tài liệu |
+| 4 | `run_explorer.py` với chức năng đọc | Có `session_summary.json` + `trace.jsonl` |
+| 5 | `replay_spec.py` | Có `promotion.json` và blocker được giải thích |
+
+## Liên kết
+
+- [Cấu hình](./cau-hinh) · [Triển khai Docker](./trien-khai-docker) · [Xử lý sự cố](./van-hanh-su-co)

@@ -1,0 +1,155 @@
+---
+title: Tham chiếu — cấu trúc, biến, API, bàn giao
+description: Bảng tra nhanh thư mục, artifact, biến môi trường, endpoint và checklist bàn giao môi trường.
+sidebar_position: 12
+sidebar_label: 11 · Tham chiếu
+---
+
+# Tham chiếu
+
+## Cấu trúc thư mục
+
+```text
+testforge-ai/
+├─ testforge_broker.py          # HTTP Broker, job, health, metrics, auth
+├─ cognee_adapter.py            # Adapter /v1 cho Cognee
+├─ Dockerfile
+├─ docker-compose.yml
+├─ docker/Dockerfile.broker-upgrade
+├─ requirements.txt
+├─ package.json / package-lock.json
+├─ playwright.config.ts
+├─ schemas/                     # hợp đồng đầu vào, kết quả, artifact
+├─ scripts/                     # CLI: explore, replay, orchestrate, perf, staging, impact
+├─ src/
+│  ├─ agent1/                   # normalizer, explorer, designer, generator, healer, staging
+│  ├─ agent2/                   # workload, k6 runner, evaluator
+│  ├─ agent3/                   # optimizer / recommendation
+│  ├─ impact/                   # graph, selector, engine
+│  ├─ execution/                # backend, sandbox runner
+│  └─ observability/            # log JSON, request context
+├─ opt/
+│  ├─ perf/                     # requirement, users.json
+│  ├─ staging/                  # profile, suite, generated
+│  ├─ impact/                   # config, suite, profile, example
+│  ├─ gherkin/, testspec/
+│  └─ sut-tnqd/
+├─ plugin/testforge-ai/         # tool cho agent harness
+├─ artifacts/
+│  ├─ inputs/                   # Standard Test Input đã duyệt
+│  ├─ library/                  # thư viện dùng lại
+│  ├─ automation/exploration/   # EXPLORE-*
+│  ├─ automation/staging/       # STAGING-*
+│  ├─ impact/                   # IMPACT-*
+│  ├─ broker/                   # log JOB-*.log
+│  └─ perf/                     # PRUN-*, REC-*
+├─ tests/
+└─ docs/
+```
+
+## Artifact theo loại run
+
+| Run | Thư mục | Nội dung chính |
+|---|---|---|
+| `EXPLORE` | `artifacts/automation/exploration/EXPLORE-<id>/` | `session_summary.json`, `trace.jsonl`, ảnh từng step, `input.feature`, `video/`, `owned.json`, `synthesis/` |
+| `STAGING` | `artifacts/automation/staging/STAGING-<id>/` | summary, JUnit, evidence; khi có impact: `impact_plan.json`, `selected_suite.json`, `impact_result.json` |
+| `PRUN` | `artifacts/perf/PRUN-<id>/` | requirement, script k6, NDJSON, `performance_result.json` |
+| `REC` | `artifacts/perf/REC-<id>/` | `issue_summary`, `evidence`, `likely_causes`, `action`, `validation_plan` |
+| `IMPACT` | `artifacts/impact/IMPACT-<hash>/` | `impact_plan.json` |
+| `JOB` | `artifacts/broker/JOB-<id>.log` | Log subprocess |
+
+## Biến môi trường tra nhanh
+
+| Biến | Mặc định | Phạm vi |
+|---|---|---|
+| `TESTFORGE_BROKER_TOKEN` | rỗng (cho qua) | Broker |
+| `TESTFORGE_BROKER_URL` | — | Client/plugin |
+| `TESTFORGE_PYTHON` | `sys.executable` | Broker subprocess |
+| `TESTFORGE_JOB_TIMEOUT` | `600` | Broker |
+| `TESTFORGE_ALLOWED_ORIGINS` | rỗng | Broker CORS |
+| `AGENT_MEMORY_API_URL` | `http://127.0.0.1:8000/v1` | Adapter |
+| `AGENT_MEMORY_API_KEY` | rỗng | Adapter |
+| `TESTFORGE_EVIDENCE_BASE_URL` | — | Link bằng chứng |
+| `LOG_LEVEL` / `LOG_JSON` | `INFO` / `true` | Observability |
+| `TESTFORGE_EXECUTION_BACKEND` | `local` | Chọn backend (`sandbox-kit`) |
+| `TESTFORGE_SANDBOX_IMAGE` | rỗng | Sandbox-Kit |
+| `TESTFORGE_SOURCE_REVISION` | — | Build/tag image |
+| `TESTFORGE_SUT_BASE_URL` | — | Fallback `command/execute` |
+| `TESTFORGE_SUT_API_URL` | — | Fallback `command/execute` |
+| `TESTFORGE_SUT_EMAIL` | — | Fallback `command/execute` |
+| `TESTFORGE_SUT_ACTOR` | — | Fallback `command/execute` |
+| `TESTFORGE_SUT_PASSWORD_ENV` | `TNQD_ADMIN_PASSWORD` | Tên biến mật khẩu |
+| `TESTFORGE_BROWSER_EXTRA_HEADERS` | rỗng | Browser context |
+| `OPENCODE_BASE_URL` | — | LLM |
+| `OPENCODE_API_KEY` | — | LLM |
+| `TESTFORGE_LLM_MODEL` | — | LLM |
+| `OPENCODE_TIMEOUT_SECONDS` | `120` | LLM |
+
+Chi tiết ngữ nghĩa: [Cấu hình](./cau-hinh).
+
+## Endpoint tra nhanh
+
+| Method | Path | Auth | Trả job |
+|---|---|---|---|
+| GET | `/api/v1/health` | Không | — |
+| GET | `/api/v1/metrics` | Không (hiện tại) | — |
+| POST | `/api/v1/fetch-testcase` | Bearer | — |
+| POST | `/api/v1/explore` | Bearer | 202 |
+| POST | `/api/v1/replay` | Bearer | 202 |
+| POST | `/api/v1/staging` | Bearer | 202 |
+| POST | `/api/v1/perf` | Bearer | 202 |
+| POST | `/api/v1/recommend` | Bearer | 202 |
+| POST | `/api/v1/orchestrate/functional` | Bearer | 202 |
+| POST | `/api/v1/orchestrate/perf` | Bearer | 202 |
+| POST | `/api/v1/orchestrate/resolve` | Bearer | — |
+| POST | `/api/v1/orchestrate/intent` | Bearer | — |
+| POST | `/api/v1/command` | Bearer | — |
+| POST | `/api/v1/command/execute` | Bearer | 202 |
+| POST | `/api/v1/impact/analyze` | Bearer | — |
+| POST | `/api/v1/gherkin` | Bearer | 202 |
+| POST | `/api/v1/bugbash` | Bearer | 202 |
+| POST | `/api/v1/cancel/{job_id}` | Bearer | — |
+| GET | `/api/v1/result/{job_id}` | Bearer | — |
+| GET | `/api/v1/evidence/{path}` | Bearer (header/query) | — |
+
+## Checklist bàn giao môi trường
+
+Ghi lại đầy đủ:
+
+- [ ] Image digest / commit / `BUILD_REVISION`
+- [ ] Interpreter và danh sách dependency thực tế
+- [ ] URL Broker / UI / API / Adapter
+- [ ] Tên dataset Cognee + phiên bản tài liệu
+- [ ] Nguồn cấp bí mật (không ghi giá trị)
+- [ ] Thư viện testcase đã duyệt (`artifacts/inputs`, `artifacts/library`)
+- [ ] Volume và chính sách retention
+- [ ] Tài khoản và vai trò cho từng môi trường
+- [ ] Kết quả health → recall → explore → replay → perf
+- [ ] Đường dẫn evidence mẫu
+
+Bàn giao **riêng** cấu hình có bí mật qua kênh được cấp quyền.
+
+## Nguồn tham chiếu trong mã nguồn
+
+| Mã | File |
+|---|---|
+| [01] | `testforge_broker.py` — API, model, job, health, metrics, auth |
+| [02] | `Dockerfile`, `docker-compose.yml`, `.dockerignore` |
+| [03] | `scripts/run_explorer.py`, `src/agent1/explorer/login.py` |
+| [04] | `cognee_adapter.py` — Adapter `/v1`, dataset, search |
+| [05] | `scripts/replay_spec.py`, `src/agent1/explorer/synthesizer.py` |
+| [06] | `scripts/run_perf.py`, `scripts/orchestrate_perf.py`, `src/agent2/` |
+| [07] | `src/agent1/healer/` |
+| [08] | `scripts/compose_testcase.py`, `src/agent1/composer/composer.py` |
+| [09] | `schemas/standard_test_input.schema.json`, `performance_requirement.schema.json` |
+| [10] | `scripts/orchestrate.py`, `src/agent1/orchestrator/` |
+| [11] | `plugin/testforge-ai/` |
+| [12] | `src/agent1/executor/sandbox_runner.py` |
+| [13] | `scripts/run_recommend.py`, `src/agent3/optimizer.py` |
+| [14] | `src/observability/` |
+| [15] | `scripts/retention.py`, `scripts/run_staging.py` |
+| [16] | `scripts/analyze_impact.py`, `src/impact/`, `schemas/impact_config.schema.json` |
+
+## Liên kết
+
+- [Kiến trúc](./kien-truc) · [Cài đặt](./cai-dat) · [Thuật ngữ](/docs/reference/thuat-ngu)
