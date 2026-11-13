@@ -6,8 +6,15 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'ADLC Factory',
-  tagline: 'Engineering at Factory Scale',
+  tagline: 'Tài liệu hệ thống ADLC — điều phối · harness · sandbox · kiểm chứng',
   favicon: 'img/favicon.ico',
+
+  // Docusaurus 3.10 (future.v4) không tự quét thư mục src/clientModules —
+  // phải khai báo tường minh tại đây.
+  clientModules: [
+    './src/clientModules/d3TransitionPatch.ts',
+    './src/clientModules/hideBenignResizeObserverOverlay.ts',
+  ],
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -31,8 +38,12 @@ const config: Config = {
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en'],
+    defaultLocale: 'vi',
+    locales: ['vi'],
+  },
+
+  markdown: {
+    mermaid: true,
   },
 
   presets: [
@@ -41,10 +52,6 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
         blog: {
           showReadingTime: true,
@@ -52,10 +59,6 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -69,6 +72,7 @@ const config: Config = {
   ],
 
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       require.resolve('@easyops-cn/docusaurus-search-local'),
       {
@@ -98,9 +102,8 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Tài liệu',
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/vanguard-lint/vanguard-factory',
           label: 'GitHub',
@@ -112,42 +115,20 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Tài liệu',
           items: [
-            {
-              label: 'Tutorial',
-              to: '/docs/intro',
-            },
+            {label: 'Trang đích', to: '/docs/'},
+            {label: 'Nền tảng ADLC', to: '/docs/fundamentals/bai-toan'},
+            {label: 'Kiến trúc 4 tầng', to: '/docs/architecture/tong-quan-4-tang'},
+            {label: 'Hướng dẫn chạy lần đầu', to: '/docs/user-guides/dung-he-thong-lan-dau'},
           ],
         },
         {
-          title: 'Community',
+          title: 'Tra cứu',
           items: [
-            {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
-            },
-            {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
-            },
-            {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
-            },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'Blog',
-              to: '/blog',
-            },
-            {
-              label: 'GitHub',
-              href: 'https://github.com/vanguard-lint/vanguard-factory',
-            },
+            {label: 'API REST', to: '/docs/reference/api-rest'},
+            {label: 'MCP Tools', to: '/docs/reference/mcp-tools'},
+            {label: 'Thuật ngữ', to: '/docs/reference/thuat-ngu'},
           ],
         },
       ],

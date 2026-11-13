@@ -1,0 +1,55 @@
+---
+title: Virtual File System (VFS)
+description: Tệp ảo dùng chung — vòng đời tách khỏi phiên thực thi, cách agent đọc/ghi tệp.
+sidebar_position: 5
+---
+
+# Virtual File System (VFS)
+
+:::note Người phụ trách
+| | |
+|---|---|
+| **Hệ thống** | Sandbox Kit — VFS |
+| **Người phụ trách** | Nguyễn Trung Kiên |
+| **Trạng thái tài liệu** | Draft |
+| **Cập nhật** | 2026-11-13 |
+:::
+
+## 01 · Overview
+
+VFS là **hệ thống tệp ảo dùng chung** giữa các phiên sandbox:
+
+- Tệp dự án **sống độc lập với phiên thực thi** — phiên tắt đi, tệp vẫn còn.
+- Giữ tệp hiện tại + nhánh + HEAD, **không giữ thư mục `.git`**.
+- Mỗi agent/đơn vị công việc thấy đúng vùng tệp của mình — thay đổi theo người/việc.
+
+Vai trò trong kiến trúc: [Tầng 4 · Sandbox](/docs/architecture/tang-4-sandbox) ·
+Dòng dữ liệu: [Data Flow — mã nguồn](/docs/architecture/luong-data/data-ma-nguon).
+
+## 02 · Cách VFS hoạt động với Git
+
+```
+git clone (Gitea) ──▶ VFS ──▶ đồng bộ vào phiên sandbox ──▶ agent chỉnh sửa
+                                                                │
+nhánh agent ◀── git push ◀── commit trong vùng tạm (dựng cây) ◀──┘
+```
+
+Nguyên tắc: **[Git contract](/docs/architecture/giao-tiep#contract-git)** — 1 agent 1 nhánh,
+không đẩy thẳng `main`, người duyệt merge.
+
+## 03 · Thao tác chính
+
+| Thao tác | Khi nào |
+|---|---|
+| **Pull từ Git vào VFS** | Bắt đầu một đơn vị công việc |
+| **Đồng bộ tệp vào phiên** | Tạo phiên sandbox / chạy lại hồi quy |
+| **Đọc/ghi tệp trong phiên** | Agent làm việc; qua plugin vai-sandbox |
+| **Đồng bộ thay đổi ra ngoài** | Trước khi commit/push |
+| **Xem diff trong review** | Người duyệt nhận thay đổi |
+
+## 04 · Nội dung sẽ bổ sung
+
+- [ ] API chi tiết các thao tác tệp (đường dẫn, tham số)
+- [ ] Quy ước tổ chức workspace theo tenant
+- [ ] Giới hạn dung lượng & retention
+- [ ] Kết quả đúng phải thấy cho từng thao tác

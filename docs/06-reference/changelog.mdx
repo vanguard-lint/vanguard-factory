@@ -1,0 +1,39 @@
+---
+title: Changelog
+description: Lịch sử phiên bản của hệ thống và bộ tài liệu.
+sidebar_position: 12
+---
+
+# Changelog
+
+Định dạng theo [Keep a Changelog](https://keepachangelog.com/) — thêm mục mới lên đầu.
+
+## [0.1.0] — 2026-11-13
+
+### Added — bộ tài liệu
+
+- Khởi tạo bộ docs 6 phần: Nền tảng · Kiến trúc · HDSD · Vận hành · Developer · Tra cứu.
+- Kiến trúc 4 tầng + nhóm trang kết nối (E2E, contracts, data/artifact flow, security, kiểm chứng).
+- HDSD Workloop điều phối (cài đặt, vòng 4 bước, MCP, dashboard, xử cố).
+- Trang HDSD khung sườn cho Harness/DSH, Agent Memory, TestForge, Sandbox Kit, Agent Orchestrator
+  (chờ người phụ trách bổ sung).
+- Reference: API REST, MCP tools, Spec DSL, env vars, trạng thái, ma trận năng lực, thuật ngữ.
+
+### Added — mở rộng theo đề xuất Knowledge Base
+
+- **System Directory** — bản đồ hệ thống con kèm cờ trạng thái (đã triển khai / đang phát triển /
+  thực nghiệm / đề xuất).
+- **Phụ thuộc & sức khỏe** — bảng "thành phần lỗi → ảnh hưởng gì" trong Monitoring.
+- **Metadata chuẩn trang HDSD** — Owner · trạng thái tài liệu · trạng thái hệ thống · ngày cập nhật.
+- **Hai lối vào trang chủ** — người mới tìm hiểu / người dùng ngay.
+- **Chuẩn viết tài liệu** — template 8 phần HDSD, cấu trúc hướng dẫn thao tác, bảng 3 loại tài liệu.
+- Reference mới: **FAQ · Known Issues · ADR (4 bản đầu) · Tình trạng tài liệu**.
+- Trang mới ở 01: **SDLC vs ADLC · AI Agent & Multi-Agent System**.
+- Trang mới: **VFS** (03) · **Phân quyền & tài khoản** (04).
+- Sơ đồ chuyển sang **Mermaid** (`@docusaurus/theme-mermaid`), thêm sequence diagram tham chiếu
+  luồng E2E với Human Reviewer.
+
+### Ghi chú
+
+- Hệ thống chưa đánh version chính thức — các mốc tiếp theo cập nhật tại đây kèm ngày và người
+  thực hiện.

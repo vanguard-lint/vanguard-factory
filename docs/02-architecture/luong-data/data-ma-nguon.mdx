@@ -1,0 +1,39 @@
+---
+title: Data Flow — mã nguồn
+description: Git → VFS → sandbox; spec và agents đi qua factory repo; đồng bộ bằng SHA.
+sidebar_position: 1
+---
+
+# Data Flow — mã nguồn đi qua đâu (2.6a)
+
+> Sơ đồ gốc nằm trong các slide — xuất hình vào `static/img/02-architecture/` khi có.
+
+## Dòng chính: Git → VFS → Sandbox
+
+```
+GITEA (source of truth)
+   │  git clone (lần chạy)
+   ▼
+VFS (tệp ảo dùng chung — giữ tệp hiện tại + nhánh + HEAD, không giữ thư mục .git)
+   │  đồng bộ tệp thay đổi vào phiên
+   ▼
+SANDBOX (môi trường cô lập — agent đọc/ghi tệp ở đây)
+   │  agent chỉnh sửa
+   ▼
+dựng cây + commit trong vùng tạm (isomorphic-git)
+   │  git push
+   ▼
+NHÁNH AGENT trên Gitea ──▶ PR ──▶ người duyệt merge
+```
+
+Nguyên tắc (theo [Contract Git](/docs/architecture/giao-tiep#contract-git)): **1 agent — 1
+nhánh**, không đẩy thẳng `main`, tệp dự án sống độc lập với phiên sandbox.
+
+## Dòng phụ: spec & agents qua factory repo
+
+- Workflow spec (`workflows/*.spec.yaml`) và persona agent (`agents/*.md`) nằm trong **factory
+  repo** — nguồn sự thật quản lý bằng Git.
+- Backend **sync** định kỳ/theo lệnh `POST /api/v1/flows/sync`; mỗi lần sync trả **SHA** của commit
+  factory — mọi run ghi rõ chạy theo SHA nào → truy vết được "workflow này sinh ra từ phiên bản nào".
+- Secret **không bao giờ** nằm trong factory repo — chỉ tên ref. Xem
+  [Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen).

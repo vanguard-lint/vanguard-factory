@@ -1,0 +1,49 @@
+---
+title: Gọi tool MCP — ví dụ nhanh
+description: Năm tool hay dùng nhất cho agent orchestrator + ví dụ câu lệnh; bảng đầy đủ ở mục 06.
+sidebar_position: 3
+sidebar_label: Gọi tool MCP (nhanh)
+---
+
+# Gọi tool MCP — ví dụ nhanh
+
+Trang này chỉ chứa **cách dùng hàng ngày**. Bảng tra đầy đủ (tham số, trả về) nằm ở
+[MCP Tools Reference](/docs/reference/mcp-tools) — theo quy tắc "một chỗ duy nhất".
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Workloop — gọi tool MCP |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | 🟢 Published |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+## Năm tool hay dùng nhất
+
+| Tool | Khi nào dùng |
+|---|---|
+| `configure_workflow` | Định nghĩa/cập nhật workflow (spec + agents) |
+| `run_workflow` | Chạy workflow — trả `job_id` |
+| `get_run` | Xem trạng thái run (node nào xong, node nào chờ) |
+| `get_report` | Xem tin nhắn cuối + kết quả từng node |
+| `resume_run` | Chạy tiếp run đã PAUSE từ checkpoint |
+
+## Ví dụ — một câu cho agent orchestrator
+
+```text
+Dùng MCP workloop-factory: configure_workflow tạo workflow 'hello2' với 1 node hello
+(type WorkloopTask, role coder, brief: viết reports/hello.md 1 dòng 'hello world').
+Sau đó run_workflow('hello2', fresh=true) và in job_id.
+```
+
+Agent orchestrator sẽ gọi chuỗi tool và trả về `job_id` — bạn theo dõi bằng `get_run` hoặc tab
+**Runs**. Vòng làm việc đầy đủ: [Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc).
+
+## Kết quả đúng phải thấy
+
+Câu lệnh trên hoàn tất mà không lỗi; `get_run(job_id)` cho node ở trạng thái terminal
+(`DONE`) và `get_report(job_id)` có tin nhắn cuối của agent.

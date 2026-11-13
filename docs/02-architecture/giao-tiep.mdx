@@ -1,0 +1,65 @@
+---
+title: Giao tiếp và Integration Contracts
+description: Bản đồ kênh giao tiếp giữa các tầng và ba contract cốt lõi — TaskLoop, Git, API.
+sidebar_position: 7
+---
+
+# Giao tiếp và Integration Contracts (2.5)
+
+Contract là **mối nối giữa các tầng**: mỗi contract trả lời câu hỏi *"tầng A nối với tầng B bằng
+lời hứa nào?"*. DB và cache chỉ là chỉ mục — **nguồn sự thật luôn nằm ở contract/repo**.
+
+## Bản đồ kênh giao tiếp
+
+| Kênh | Dùng cho | Hướng |
+|---|---|---|
+| **REST API** (`/api/v1/...` trên backend workloop) | Điều khiển run, duyệt, đồng bộ factory, metrics | FE/agent → backend |
+| **MCP** (`workloop-factory`, stdio) | Agent orchestrator điều phối bằng ngôn ngữ tự nhiên | agent → backend |
+| **Webhook** | Nhận việc từ nguồn ngoài (Git, ticketing), nhận kết quả tích hợp | nguồn ngoài → backend |
+| **Event stream (SSE)** | Theo dõi tiến độ run theo thời gian thực | backend → FE |
+| **WS (stream events)** | HITL waterfall approval, mux sự kiện phiên | harness ↔ client |
+| **OTLP HTTP** | Gửi traces sang Phoenix | backend → observability |
+
+Chi tiết từng endpoint: [API REST Reference](/docs/reference/api-rest) ·
+Danh sách tool MCP: [MCP Tools Reference](/docs/reference/mcp-tools).
+
+## Contract TaskLoop
+
+Hợp đồng giữa **Tầng 2 (workflow)** và **Tầng 3 (harness)** về một task:
+
+- Task có định danh, trạng thái terminal rõ ràng, cập nhật qua API taskloop của harness
+  (`POST /api/taskloop/task|tasks|contract` — create/get/list/update).
+- **Contract là nguồn sự thật** — mọi bên đọc trạng thái từ contract; DB của backend chỉ là chỉ mục
+  phục vụ tra cứu nhanh.
+- Task kết thúc chỉ ở trạng thái terminal (`DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`,
+  `NEEDS_CONTEXT`…). Node mang cờ `gate` chỉ chấp nhận `DONE`.
+- Ai nợ ai: workflow nợ harness một spec đóng băng + ngân sách (token, thời gian, số lần re-arm);
+  harness nợ workflow trạng thái trung thực + bằng chứng.
+
+## Contract Git
+
+Hợp đồng giữa **hệ thống** và **kho mã nguồn**:
+
+- **1 agent — 1 nhánh.** Mỗi phiên agent làm việc trên nhánh riêng, không đụng nhánh của agent khác.
+- **Không đẩy thẳng `main`.** Mọi thay đổi đi qua PR; **người duyệt merge** — agent không tự gộp.
+- Dòng dữ liệu: `git clone → VFS (không giữ thư mục .git) → dựng cây và commit trong vùng tạm →
+  push lên nhánh agent`. Xem: [Data flow mã nguồn](/docs/architecture/luong-data/data-ma-nguon).
+- Secret không bao giờ nằm trong repo — chỉ **tên ref** trỏ tới vault.
+
+## Contract API
+
+Quy ước gọi giữa các tầng (ai nợ ai cái gì):
+
+- Mọi API backend được bảo vệ bằng **bearer token qua biến môi trường** (`WORKLOOP_TOKEN`); gọi
+  thiếu/sai token → 401.
+- Hợp đồng trả về: trạng thái job/node theo bảng
+  [trạng thái chuẩn](/docs/reference/trang-thai) — các bên không tự chế trạng thái mới.
+- Timeout & retry thuộc về **bên gọi**; phía gọi chịu trách nhiệm re-arm qua cơ chế chung
+  ([ReArmControlLoop](/docs/developer-docs/sdk-gateway)).
+- Gián đoạn không làm mất kết quả — bên nào cũng phải **đối chiếu trạng thái đã lưu**, không tự
+  tạo lại (xem [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan)).
+
+## Rào chắn
+
+Mọi kênh trên đều đi qua lớp bảo mật chung — lọc lệnh, cách ly, audit:
+[Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop).

@@ -1,0 +1,9 @@
+{
+  "label": "Công cụ & dịch vụ hỗ trợ",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "title": "Công cụ & dịch vụ hỗ trợ",
+    "description": "Gitea, Phoenix, Steel Browser, Playwright & k6, VFS — các công cụ trong hệ sinh thái."
+  }
+}

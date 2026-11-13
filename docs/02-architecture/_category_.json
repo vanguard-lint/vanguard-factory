@@ -1,0 +1,9 @@
+{
+  "label": "02 · Kiến trúc hệ thống",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "Kiến trúc hệ thống",
+    "description": "4 tầng của ADLC và các cơ chế kết nối: luồng end-to-end, contract, data flow, bảo mật, kiểm chứng."
+  }
+}

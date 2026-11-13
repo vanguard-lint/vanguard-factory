@@ -1,0 +1,34 @@
+---
+title: Gitea
+description: Source of truth — Git repo và webhooks cho factory repo và mã nguồn.
+sidebar_position: 1
+---
+
+# Gitea — source of truth
+
+## Vai trò trong hệ thống
+
+Gitea là **kho Git nội bộ** chứa mọi nguồn sự thật của hệ thống:
+
+| Repo | Chứa | Ai sử dụng |
+|---|---|---|
+| **Factory repo** (theo tenant) | Workflow spec, briefs, persona agents, cấu hình tenant | Tầng 2 sync; người viết workflow |
+| **Repo workloop** | Mã nguồn backend/frontend/MCP | Người phát triển |
+| **Repo sản phẩm** | Mã nguồn sản phẩm được agent sửa | Agent qua nhánh riêng; người duyệt merge |
+
+## Webhook
+
+Sự kiện Git (push, PR) đẩy về backend qua webhook — nguồn công việc và tín hiệu sync:
+[Giao tiếp & Contracts](/docs/architecture/giao-tiep).
+
+## Quy tắc sử dụng
+
+- **Không đẩy thẳng `main`** của repo sản phẩm — mọi thay đổi qua PR từ nhánh agent, người duyệt
+  merge ([Git contract](/docs/architecture/giao-tiep#contract-git)).
+- **Secret không nằm trong repo** — chỉ tên ref ([Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen)).
+- URL/cred truy cập repo cấp qua biến môi trường, không ghi trong docs.
+
+## Liên kết
+
+- Data flow mã nguồn: [Data Flow — mã nguồn](/docs/architecture/luong-data/data-ma-nguon)
+- Khôi phục sau sự cố: [Sao lưu & phục hồi](/docs/admin-operations/sao-luu-phuc-hoi)

@@ -1,0 +1,57 @@
+---
+title: Xử cố
+description: 401 DSH, stall → re-arm, pause/resume và các sự cố thường gặp.
+sidebar_position: 5
+---
+
+# Xử cố thường gặp
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Workloop — điều phối |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | 🟢 Published |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+## 401 hàng loạt — token DSH đổi sau restart
+
+**Triệu chứng:** mọi thao tác qua harness trả 401 sau khi DSH khởi động lại.
+**Nguyên nhân:** DSH xoay token mỗi lần restart.
+**Xử lý:** cập nhật `DSH_TOKEN` trong `run_backend.sh` → khởi động lại backend. Không bỏ qua bước
+này — backend đang chạy sẽ lỗi hàng loạt.
+
+## Stall → re-arm
+
+**Triệu chứng:** node đứng lâu không có tiến triển.
+**Cơ chế:** vòng điều khiển phát hiện stall → re-arm phiên mới (không mang hội thoại cũ, mang lỗi
+gần nhất) — tối đa `max_rearms` lần; hết lượt → node `REARM_EXHAUSTED`.
+**Xử lý:** xem report node để biết lý do thiếu tiến triển; tăng ngân sách hoặc sửa brief rồi chạy
+node lại. Chi tiết cơ chế: [SDK & Gateway](/docs/developer-docs/sdk-gateway).
+
+## Pause / resume
+
+- `pause_run(job_id)` — dừng run **ở ranh giới wave**; node đang chạy hoàn tất tới checkpoint.
+- `resume_run(job_id)` — chạy tiếp từ checkpoint; **node đã xong không chạy lại**.
+- Nguyên tắc khôi phục: [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan).
+
+## Bảng sự cố thường gặp
+
+| Hiện tượng | Nguyên nhân | Xử lý |
+|---|---|---|
+| `401` từ mọi API | sai `WORKLOOP_TOKEN` | đối chiếu env với header gửi lên |
+| sync báo git lỗi | sai URL/creds factory repo | thử `git ls-remote <url>` thủ công |
+| run kẹt `in_progress` | DSH chết hoặc token hết hạn | xem log backend; sửa env rồi restart backend |
+| workflow 404 khi run | chưa sync sau khi push spec | gọi `POST /api/v1/flows/sync` |
+| session không nằm trong workspace | harness thiếu workspace id | kiểm tra biến env workspace đã export |
+
+Runbook mở rộng cho admin: [Runbook sự cố](/docs/admin-operations/runbook-su-co).
+
+## Kết quả đúng phải thấy
+
+Sau khi xử lý xong một sự cố: `curl :8100/api/health` trả `{"ok":true}` và run tiếp tục từ
+checkpoint mà không chạy lại node đã DONE.

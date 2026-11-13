@@ -1,0 +1,9 @@
+{
+  "label": "Security & Permission Model",
+  "position": 9,
+  "link": {
+    "type": "generated-index",
+    "title": "Security & Permission Model",
+    "description": "Bảo mật nhiều lớp, secret và quyền trong hệ thống."
+  }
+}

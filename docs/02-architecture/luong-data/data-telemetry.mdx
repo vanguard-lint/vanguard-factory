@@ -1,0 +1,38 @@
+---
+title: Data Flow — telemetry
+description: Traces/log/metrics về Phoenix qua OTLP; lineage của quyết định.
+sidebar_position: 2
+---
+
+# Data Flow — telemetry (2.6b)
+
+## Dòng telemetry
+
+```
+Backend workloop ──(OTLP HTTP)──▶ PHOENIX ──▶ dashboard observability
+  span: workloop.run                 │            traces · chi phí theo model
+  span: workloop.node.<id>           │            theo dõi từng node
+  session = job_id                   └──▶ báo cáo metrics định kỳ
+```
+
+- Bật tracing bằng biến môi trường `WORKLOOP_TRACING=1`; điểm đến khai báo qua biến
+  `OTEL_EXPORTER_OTLP_*`. Bảng đầy đủ: [Env vars](/docs/reference/env-vars).
+- **Session = job_id** — mọi span của một run được nhóm theo job, tra cứu được toàn vòng đời.
+- Backend tắt auto-instrument của framework để tránh nhiễu; hai gateway (DSH/OpenCode) đẩy trace
+  riêng của phần thực thi.
+- FE đọc số liệu qua nhóm API `observability` của backend (`/summary`, `/daily`).
+
+## Vì sao telemetry quan trọng
+
+1. **Log trung lập** — trạng thái do hệ thống ghi, không phải lời agent nói; phục vụ nguyên tắc
+   [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).
+2. **Lineage của quyết định** — mỗi gate duyệt/re-arm/gọi model đều để lại dấu vết; hỏi được
+   "tại sao node này BLOCKED" mà không phải đoán.
+3. **System Loop** — dữ liệu nhiều lần chạy là đầu vào cho cải tiến
+   ([ba vòng cải tiến](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien)).
+
+## Vận hành
+
+Cấu hình Phoenix, chi phí theo model, cảnh báo:
+[Vận hành & monitoring](/docs/admin-operations/monitoring-canh-bao) ·
+Công cụ Phoenix: [Công cụ hỗ trợ](/docs/user-guides/cong-cu-ho-tro/phoenix-observability).

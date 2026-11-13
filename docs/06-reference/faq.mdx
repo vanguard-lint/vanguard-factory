@@ -1,0 +1,56 @@
+---
+title: FAQ — Câu hỏi thường gặp
+description: Giải đáp nhanh các thắc mắc thường gặp khi sử dụng hệ thống ADLC.
+sidebar_position: 8
+---
+
+# FAQ — Câu hỏi thường gặp
+
+## Về tin cậy kết quả
+
+**Agent báo đã xong, có tin được không?**
+Không tin lời nói — tin bằng chứng. Mọi kết luận PASS/FAIL phải đến từ
+[kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap): kỳ vọng đóng băng,
+quan sát bên ngoài, đủ bằng chứng.
+
+**`DONE_WITH_CONCERNS` có qua được gate không?**
+Không. Node mang cờ `gate` chỉ nhận `DONE` — phải xử lý concerns rồi mới qua cổng duyệt.
+Xem: [Trạng thái](/docs/reference/trang-thai).
+
+**TestForge báo `PARTIAL` — tính năng đã hoàn thành chưa?**
+Chưa. `PARTIAL` là trạng thái chưa hoàn tất — cần đối chiếu bước lỗi, dữ liệu, log rồi chạy lại.
+Xem: [TestForge — đọc kết quả](/docs/user-guides/testforge/gioi-thieu#đọc-kết-quả).
+
+## Về quy trình
+
+**Vì sao agent không được merge code vào `main`?**
+Theo [Git contract](/docs/architecture/giao-tiep#contract-git): 1 agent — 1 nhánh, mọi thay đổi qua
+PR, **người duyệt merge**. Agent đề xuất, người quyết định.
+
+**Run bị PAUSE xong, node đã DONE có chạy lại không?**
+Không. Resume tiếp tục từ checkpoint — node đã xong không chạy lại. Nguyên tắc:
+[Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan).
+
+**Tôi có phải học ngôn ngữ giao việc đặc biệt không?**
+Không cần. Giao việc bằng ngôn ngữ tự nhiên qua
+[Agent Orchestrator](/docs/user-guides/opencode-orchestrator/gioi-thieu) (MCP), hoặc qua REST nếu
+thích tự động hóa.
+
+## Về vận hành
+
+**Restart DSH xong mọi API trả 401?**
+DSH đổi token sau mỗi lần restart — cập nhật `DSH_TOKEN` rồi khởi động lại backend.
+Chi tiết: [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co).
+
+**Workflow run báo 404 dù đã viết spec?**
+Chưa sync sau khi push spec — gọi `POST /api/v1/flows/sync`. Chi tiết:
+[Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co#bảng-sự-cố-thường-gặp).
+
+**Đặt secret ở đâu?**
+Trong vault trung tâm; spec/brief/docs chỉ được nhắc **tên ref**. Mô hình:
+[Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen) ·
+Thủ tục: [Quản lý secret](/docs/admin-operations/quan-ly-secret).
+
+:::note Trang này là khung
+Câu hỏi mới sẽ được bổ sung theo tiến độ sử dụng hệ thống. Gửi câu hỏi qua PR vào trang này.
+:::

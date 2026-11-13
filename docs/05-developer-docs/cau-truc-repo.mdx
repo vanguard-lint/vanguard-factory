@@ -1,0 +1,47 @@
+---
+title: Cấu trúc repo
+description: workloop · factory repo · docs site — ai sở hữu gì.
+sidebar_position: 1
+---
+
+# Cấu trúc repo
+
+Hệ thống gồm ba mảnh repo tách bạch vai trò:
+
+```
+┌────────────────────────┐   ┌────────────────────────┐   ┌───────────────────────┐
+│  WORKLOOP (mã nguồn)   │   │  FACTORY REPO (config) │   │  DOCS SITE            │
+│  backend + FE + MCP +  │   │  workflows/ briefs/    │   │  tài liệu này         │
+│  gateway + engine      │   │  agents/ templates/    │   │  (docusaurus)         │
+│  → platform            │   │  skills/ factory.yaml  │   │                       │
+└────────────────────────┘   └────────────────────────┘   └───────────────────────┘
+       .platform — chung            .riêng theo tenant             .chung
+```
+
+## Ai sở hữu gì
+
+| Mảnh | Nội dung | Sở hữu | Ghi chú |
+|---|---|---|---|
+| **workloop** | Backend control plane, dashboard, MCP server, gateway, engine | Nhóm điều phối | Đóng góp qua PR |
+| **factory repo** (mỗi tenant một repo) | Workflow spec, brief, persona, template, skill, `factory.yaml` | **Từng nhóm sản phẩm** | Nội dung là **tài sản riêng của tenant — không public** |
+| **docs site** | Tài liệu kiến trúc/HDSD/vận hành | Nhóm chung, mỗi mảng tự điền phần của mình | Quy tắc "một chỗ duy nhất" |
+
+## Cấu trúc factory repo (mô tả tổng quát)
+
+```
+factory.yaml            # cấu hình tenant: harness, model mặc định, automation rules
+workflows/<name>.spec.yaml   # LOGIC workflow — DAG theo DSL (chỉ logic, không layout)
+briefs/<node>.md        # brief cho từng node (khi không đặt inline)
+agents/<role>.md        # persona agent
+templates/ skills/      # mẫu tài liệu & kiến thức inject cho agent
+reports/                # nơi ghi báo cáo do workflow sinh ra
+```
+
+- Số lượng file cụ thể của từng tenant **không liệt kê trong docs công khai**.
+- Secret **không bao giờ** nằm trong factory repo — chỉ tên ref.
+
+## Liên kết
+
+- Data flow của các file này: [Data Flow — mã nguồn](/docs/architecture/luong-data/data-ma-nguon)
+- Viết spec: [Viết workflow spec](/docs/developer-docs/viet-workflow-spec) ·
+  [Spec DSL](/docs/reference/spec-dsl)

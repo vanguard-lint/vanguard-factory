@@ -1,0 +1,40 @@
+---
+title: Kiểm chứng độc lập
+description: Kỳ vọng đóng băng · quan sát bên ngoài · đủ bằng chứng mới kết luận.
+sidebar_position: 2
+---
+
+# Kiểm chứng độc lập (2.8b)
+
+**Agent nói "xong" chưa phải là xong.** Ba nguyên tắc bắt buộc cho mọi kết luận PASS/FAIL:
+
+## 1. Kỳ vọng đã duyệt được GIỮ NGUYÊN
+
+Kỳ vọng (expected) được duyệt ở cổng spec rồi **đóng băng**. Agent không được tự nới tiêu chí giữa
+chừng — ví dụ đổi "thông báo thành công hiện ra" thành "không có lỗi là được".
+
+## 2. Quan sát do BÊN ĐỘC LẬP thực hiện
+
+Test bảo vệ nằm **ngoài quyền sửa của agent thực thi**. Cách cài đặt trong hệ thống:
+
+- TestForge (agent kiểm thử) chạy test và thu bằng chứng độc lập với agent lập trình —
+  [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+- Trạng thái do hệ thống ghi (log trung lập), không phải tự báo cáo của agent —
+  [Telemetry](/docs/architecture/luong-data/data-telemetry).
+
+## 3. Đủ bằng chứng mới kết luận
+
+- PASS **và** FAIL đều phải có bằng chứng (kỳ vọng vs quan sát đối chiếu được từng bước).
+- Thiếu bằng chứng → giữ trạng thái **"chưa kiểm chứng"**, không tự phong DONE.
+
+```
+Kỳ vọng 42 · Quan sát 42   →  PASS — có bằng chứng  ✓
+Kỳ vọng 43 · Quan sát 42   →  FAIL — có bằng chứng  ✕
+```
+
+## Vai trò của người
+
+Người luôn là **bên chấp nhận cuối cùng**: candidate qua test bảo vệ PASS mới tới người duyệt, và
+việc merge thuộc người duyệt ([Git contract](/docs/architecture/giao-tiep#contract-git)).
+Xem [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan) cho trường
+hợp quá trình kiểm chứng bị ngắt giữa đường.

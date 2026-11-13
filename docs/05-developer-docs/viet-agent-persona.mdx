@@ -1,0 +1,50 @@
+---
+title: Viết agent persona & brief
+description: agents/<role>.md — persona tách khỏi brief; brief phải tự đủ.
+sidebar_position: 3
+---
+
+# Viết agent persona & brief
+
+## Persona vs brief — tách bạch
+
+| | **Persona** (`agents/<role>.md`) | **Brief** (trong spec / `briefs/<node>.md`) |
+|---|---|---|
+| Trả lời câu hỏi | *Bạn là ai, làm việc theo phong cách nào* | *Việc này là gì, xong khi nào* |
+| Đổi khi nào | Khi chuẩn hoá vai (ít khi đổi) | Theo từng node (thường đổi) |
+| Ví dụ | coder — viết mã sạch, tuân thủ convention repo | "Cài tính năng X, tiêu chí xong: test Y pass" |
+
+## Khung persona mẫu (tên vai giả định)
+
+```markdown
+# Role: coder
+
+## Vai trò
+Bạn là lập trình viên thực thi trong hệ thống ADLC...
+
+## Quy tắc làm việc
+- Làm đúng phạm vi brief; không tự mở rộng yêu cầu.
+- Mọi kết luận phải có bằng chứng (test/log) — không tự báo "xong".
+- Không đụng secret; cần secret thì dùng tên ref được cấp.
+
+## Ràng buộc
+- Làm việc trên nhánh được cấp; không đẩy main.
+- Ghi tiến độ thường xuyên để hệ thống theo dõi trạng thái.
+```
+
+## Nguyên tắc brief tự đủ
+
+Brief được người **không có ngữ cảnh dự án** đọc vẫn phải hiểu được:
+
+1. **Đầu vào** — đọc file/tài liệu nào, ở đâu (đường dẫn trong repo sản phẩm, không phải máy thật).
+2. **Đầu ra** — sản phẩm gì, đặt ở đâu, định dạng nào.
+3. **Tiêu chí "xong"** — kiểm chứng được, đo được (test nào pass, báo cáo nào có nội dung gì).
+4. **Ràng buộc** — phạm vi được đụng, hạn thời gian/số lần thử.
+
+Brief thiếu tiêu chí xong là nguyên nhân số 1 của node BLOCKED —
+[Runbook RB-02](/docs/admin-operations/runbook-su-co).
+
+## Liên kết
+
+- Kiểm chứng kỳ vọng: [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)
+- Persona nằm ở đâu: [Cấu trúc repo](/docs/developer-docs/cau-truc-repo)

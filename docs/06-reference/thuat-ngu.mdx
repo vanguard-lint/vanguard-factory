@@ -1,0 +1,39 @@
+---
+title: Thuật ngữ
+description: Glossary — harness, gate, contract, HITL, wave, artifact…
+sidebar_position: 7
+---
+
+# Thuật ngữ (Glossary)
+
+| Thuật ngữ | Nghĩa trong hệ thống này |
+|---|---|
+| **ADLC** | Agentic Development Lifecycle — vòng đời phát triển phần mềm có agent; hệ thống multi-agent hỗ trợ SDLC |
+| **Harness** | Tầng 3 — agent core, công cụ & tri thức; giúp một agent đủ năng lực hoàn thành nhiệm vụ |
+| **DSH** | Harness server nội bộ (DeepSeek Harness) — session, workspace, plugin taskloop, vault |
+| **Orchestrator** | Điều phối nhiều năng lực phối hợp; tách khỏi harness |
+| **Workloop** | Backend control plane (tầng 2): state machine, factory registry, cổng duyệt |
+| **Factory repo** | Config repo của một tenant — spec, briefs, agents; nguồn sự thật quản lý bằng Git |
+| **Spec** | Đặc tả workflow — DAG các node; được duyệt rồi **đóng băng** đúng phiên bản |
+| **Brief** | Hợp đồng giao việc cho một node — phải tự đủ ngữ cảnh |
+| **Persona** | `agents/<role>.md` — danh tính/phong cách một vai agent |
+| **Task loop** | Vòng làm việc một task: spec cố định → phiên mới → candidate → test bảo vệ → duyệt |
+| **Candidate** | Bản code đề xuất do agent sinh — được lưu, chờ kiểm chứng/duyệt |
+| **Contract** | Lời hứa nối giữa hai thành phần (TaskLoop/Git/API) — nguồn sự thật của mối nối |
+| **Gate** | Node chốt chỉ nhận `DONE` — `DONE_WITH_CONCERNS` bị chặn |
+| **HITL** | Human-in-the-loop — điểm dừng chờ người duyệt/xin thông tin |
+| **Wave** | Tầng chạy song song của DAG; PAUSE dừng ở ranh giới wave |
+| **Re-arm** | Mở phiên mới khi stall — không mang hội thoại cũ, mang lỗi gần nhất |
+| **State machine** | Máy trạng thái task/node — [Trạng thái](/docs/reference/trang-thai) |
+| **Artifact** | Sản phẩm có bằng chứng: spec, brief, candidate, bằng chứng test, report, PR |
+| **Bằng chứng** | Quan sát đối chiếu được từ bên độc lập (test, log, video, trace) — PASS/FAIL đều phải có |
+| **VFS** | Virtual File System — tệp ảo dùng chung, sống độc lập với phiên sandbox |
+| **Broker** | Cổng API của sandbox — cấp phiên, chính sách, chạy lệnh |
+| **Provisioner** | Quản lý vòng đời sandbox (OpenSandbox) |
+| **Warm pool** | Nhóm môi trường khởi sẵn — tránh cold-start |
+| **Phoenix** | Nền tảng observability thu traces qua OTLP |
+| **TestForge** | Agent kiểm chứng độc lập — chức năng (Playwright), hiệu năng (k6), khuyến nghị |
+| **Promotion gate** | Cổng chấp nhận một bài test vào bộ test chuẩn (regression) |
+| **System Loop** | Vòng cải tiến chính hệ agent — dựa trên dữ liệu nhiều lần chạy |
+| **Tenant** | Đơn vị sản phẩm có factory repo + dữ liệu riêng |
+| **Sync (SHA)** | Lần đồng bộ factory repo về backend — đánh dấu bằng SHA để truy vết |

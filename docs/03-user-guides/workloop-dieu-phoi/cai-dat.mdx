@@ -1,0 +1,113 @@
+---
+title: Cài đặt Workloop
+description: Sáu bước từ số 0 tới run workflow đầu tiên — env var, khởi động, smoke test.
+sidebar_position: 1
+---
+
+# Cài đặt Workloop
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Workloop — điều phối |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | 🟢 Published |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+## Điều kiện cần
+
+- Python 3.11 + git + `pip`.
+- Harness (DSH) đang chạy, có plugin taskloop; địa chỉ + token cấp qua biến môi trường.
+- Gitea nội bộ: một factory repo (branch `main`) chứa spec + agents.
+
+## Bước 1: Cài repo workloop
+
+```bash
+git clone <url-repo-workloop-noi-bo> workloop-repo
+cd workloop-repo && pip install -e .
+```
+
+## Bước 2: Tạo script chạy backend
+
+Tạo file `run_backend.sh` **ở thư mục ngoài repo**. Chỉnh các giá trị in hoa trước khi dùng —
+tất cả giá trị token lấy từ vault/trình quản lý secret của bạn, **không ghi vào bất kỳ file nào
+trong repo**:
+
+```bash
+#!/bin/bash
+export WORKLOOP_TOKEN=<token-backend-dung-de-chan-API>
+export WORKLOOP_DB=/duong/dan/data/workloop.db
+export WORKLOOP_SRC=/duong/dan/src
+export FACTORY_REPO_URL=<url-factory-repo-voi-cred-tu-vault>
+export FACTORY_REPO_BRANCH=main
+export FACTORY_PATH=/duong/dan/factory-checkout
+export DSH_TOKEN=<token-harness-DSH>
+export LANGFLOW_DATABASE_URL=sqlite:////duong/dan/wl-lfx.db
+export PYTHONPATH=<thu-muc-src>:<thu-muc-src>/workloop/engine
+cd <thu-muc-src>/workloop/backend
+exec python3 -m uvicorn main:app --host 0.0.0.0 --port 8100 >> /duong/dan/backend.log 2>&1
+```
+
+| Env | Ý nghĩa |
+|---|---|
+| `WORKLOOP_TOKEN` | backend dùng để chặn API của chính nó |
+| `WORKLOOP_DB` | file SQLite — jobs, events, index workflows |
+| `FACTORY_REPO_URL` | repo nguồn sự thật (spec + agents) |
+| `FACTORY_PATH` | checkout cục bộ của backend |
+| `DSH_TOKEN` | token điều khiển harness (DSH) |
+| `LANGFLOW_DATABASE_URL` | bắt buộc — tránh crash engine vendored |
+
+Bảng đầy đủ: [Env vars](/docs/reference/env-vars).
+
+## Bước 3: Khởi động và kiểm sống
+
+```bash
+setsid nohup bash run_backend.sh </dev/null >/dev/null 2>&1 &
+sleep 20 && curl http://127.0.0.1:8100/api/health
+```
+
+## Bước 4: Cắm MCP cho agent orchestrator
+
+Trong cấu hình của agent orchestrator, thêm MCP server `workloop-factory` (kiểu stdio) trỏ tới
+`src/workloop/backend/mcp_server.py`; env gồm `FACTORY_REPO_URL` + `FACTORY_PATH` +
+`WORKLOOP_TOKEN` + URL backend. Xem:
+[HDSD Agent orchestrator](/docs/user-guides/opencode-orchestrator/gioi-thieu).
+
+## Bước 5: Smoke test workflow 1 node qua MCP
+
+```bash
+<agent-orchestrator> run "Dùng MCP workloop-factory: configure_workflow tạo workflow
+'hello2' với 1 node hello (type WorkloopTask, role coder, brief: viết
+reports/hello.md 1 dòng 'hello world'). Sau đó run_workflow('hello2',
+fresh=true) và in job_id."
+```
+
+Poll tới `completed` rồi `get_report` — node DONE + có tin nhắn cuối của agent.
+
+## Bước 6: Cảnh báo token DSH
+
+**DSH đổi token sau mỗi lần restart** → cập nhật `DSH_TOKEN` trong `run_backend.sh` rồi chạy lại
+script. Backend đang chạy sẽ gặp 401 hàng loạt nếu bỏ qua. Chi tiết:
+[Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co).
+
+## Kết quả đúng phải thấy
+
+```bash
+curl http://127.0.0.1:8100/api/health
+# {"ok":true,...}
+curl -X POST http://127.0.0.1:8100/api/v1/flows/sync -H "Authorization: Bearer $WORKLOOP_TOKEN"
+# {"sha":"<sha>","workflows":[{"name":"hello2"}, ...]}
+```
+
+## Vận hành hằng ngày
+
+| Việc | Lệnh |
+|---|---|
+| Khởi động | `bash run_backend.sh` |
+| Kiểm sống | `curl :8100/api/health` |
+| Nạp spec mới từ factory repo | `POST /api/v1/flows/sync` |
+| Log backend | `tail -f <backend.log>` |

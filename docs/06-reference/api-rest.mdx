@@ -1,0 +1,95 @@
+---
+title: API REST
+description: Các endpoint chính của backend workloop (:8100) + ví dụ curl.
+sidebar_position: 1
+---
+
+# API REST Reference
+
+Toàn bộ endpoint gắn gốc `/api/v1`, bảo vệ bằng header `Authorization: Bearer $WORKLOOP_TOKEN`.
+
+## Flows — factory registry
+
+| Endpoint | Mục đích |
+|---|---|
+| `POST /api/v1/flows/sync` | Sync workflow từ factory repo (trả SHA) |
+| `GET /api/v1/flows` | Liệt kê workflow đã đăng ký |
+| `GET /api/v1/flows/{name}` | Xem chi tiết workflow |
+| `DELETE /api/v1/flows/{name}` | Gỡ workflow khỏi chỉ mục |
+| `POST /api/v1/flows/{name}/configure` | Cập nhật spec/agents |
+| `POST /api/v1/flows/{name}/run` | Chạy DAG (tham số `fresh`) |
+| `POST /api/v1/flows/seed-workspace` | Nạp workspace mẫu |
+
+## Monitor — runs & duyệt
+
+| Endpoint | Mục đích |
+|---|---|
+| `GET /api/v1/monitor/jobs` | Danh sách job |
+| `GET /api/v1/monitor/jobs/{id}` | Chi tiết job + events |
+| `GET /api/v1/monitor/jobs/{id}/timeline` | Timeline (Gantt) |
+| `GET /api/v1/monitor/jobs/{id}/approvals` | Các điểm chờ duyệt |
+| `POST /api/v1/monitor/jobs/{id}/approvals/{event_id}/answer` | Trả lời duyệt HITL |
+| `POST /api/v1/monitor/jobs/{id}/signal` | Gửi tín hiệu PAUSE/STOP |
+| `POST /api/v1/monitor/jobs/{id}/resume` | Resume từ checkpoint |
+| `GET /api/v1/monitor/jobs/{id}/reports` | Report từng node |
+| `GET /api/v1/monitor/requests` | Work request đang chờ |
+
+## Reviews — hàng đợi duyệt
+
+| Endpoint | Mục đích |
+|---|---|
+| `GET /api/v1/reviews` · `/pending` | Danh sách review / đang chờ |
+| `POST /api/v1/reviews/{id}/approve` · `/reject` | Duyệt / từ chối |
+
+## Spec PR & lifecycle — cổng duyệt spec/sản phẩm
+
+| Endpoint | Mục đích |
+|---|---|
+| `POST /api/v1/spec-pr/propose` | Đề xuất thay đổi spec |
+| `POST /api/v1/spec-pr/{pr_id}/approve` · `/merge` | Duyệt / merge (cấm tự duyệt) |
+| `GET /api/v1/spec-pr/prs` · `/audit` | Danh sách PR spec / audit |
+| `POST /api/v1/lifecycle/lifecycles` · `GET .../{id}` | Vòng đời sản phẩm |
+| `POST /api/v1/lifecycle/spec-docs` + `.../approve` | Tài liệu spec + duyệt |
+| `POST /api/v1/lifecycle/pull-requests` + `.../review` | Ghi nhận PR + review |
+
+## Metrics & observability
+
+| Endpoint | Mục đích |
+|---|---|
+| `GET /api/v1/metrics/ledger` · `/summary` · `/usage-real` | Số liệu job, tổng hợp, usage |
+| `GET /api/v1/observability/summary` · `/daily` | Đọc Phoenix |
+
+## Khác
+
+| Nhóm | Endpoint chính |
+|---|---|
+| **Events** | `GET /api/v1/events/runs/{run_id}` · `GET /api/v1/events/stream/{run_id}` (SSE) |
+| **Factory** | `GET /api/v1/factory/agents` · `GET /api/v1/factory/config` |
+| **Integrations** | `GET/PUT/DELETE /api/v1/integrations/confluence` + search/pages/test |
+| **Secrets** | `GET/POST /api/v1/secrets`, `DELETE /api/v1/secrets/{key}` (cờ `WORKLOOP_SECRETS`) |
+| **Improve** | scorers / self-improvement / benchmarks (cờ `WORKLOOP_IMPROVE`) |
+| **Webhooks** | quản lý `/api/v1/webhooks/*`; nhận `POST /webhooks/{source}` |
+| **Health** | `GET /api/health` |
+
+## Ví dụ curl
+
+```bash
+# Kiểm sống
+curl http://127.0.0.1:8100/api/health
+
+# Sync factory repo
+curl -X POST http://127.0.0.1:8100/api/v1/flows/sync \
+  -H "Authorization: Bearer $WORKLOOP_TOKEN"
+
+# Chạy workflow
+curl -X POST http://127.0.0.1:8100/api/v1/flows/<ten>/run \
+  -H "Authorization: Bearer $WORKLOOP_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"fresh": true}'
+
+# Xem job
+curl http://127.0.0.1:8100/api/v1/monitor/jobs/<job_id> \
+  -H "Authorization: Bearer $WORKLOOP_TOKEN"
+```
+
+> Danh sách payload chi tiết xem schema API trong mã nguồn; trang này giữ mức tra cứu nhanh.

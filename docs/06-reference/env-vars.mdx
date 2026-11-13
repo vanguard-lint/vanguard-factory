@@ -1,0 +1,68 @@
+---
+title: Env vars
+description: Bảng biến môi trường toàn hệ thống — chỉ tên và ý nghĩa, không giá trị thật.
+sidebar_position: 4
+---
+
+# Env vars Reference
+
+> **Quy tắc:** giá trị token/cred **không bao giờ** ghi vào repo/docs — chỉ đặt trên host hoặc
+> vault. Bảng này chỉ liệt kê **tên** + ý nghĩa.
+
+## Backend workloop
+
+| Biến | Ý nghĩa |
+|---|---|
+| `WORKLOOP_TOKEN` | bearer token bảo vệ API backend |
+| `WORKLOOP_DB` | đường dẫn SQLite (jobs, events, chỉ mục) |
+| `WORKLOOP_SRC` | thư mục mã nguồn backend |
+| `WORKLOOP_DSH_WS` | workspace id trên harness |
+| `WORKLOOP_SECRETS` | bật nhóm API secrets |
+| `WORKLOOP_IMPROVE` | bật nhóm API cải tiến (scorers/benchmarks) |
+| `WORKLOOP_WEBHOOKS` | bật nhóm API webhooks |
+| `WORKLOOP_TRACING` | `1` = bật gửi traces tới Phoenix |
+| `WL_PORT` | cổng frontend dashboard |
+
+## Factory
+
+| Biến | Ý nghĩa |
+|---|---|
+| `FACTORY_REPO_URL` | URL factory repo (nguồn sự thật spec + agents) |
+| `FACTORY_REPO_BRANCH` | branch sync (mặc định `main`) |
+| `FACTORY_PATH` | checkout cục bộ của backend |
+
+## Harness (DSH)
+
+| Biến | Ý nghĩa |
+|---|---|
+| `DSH_TOKEN` | token điều khiển harness — **đổi sau mỗi restart** |
+| `DSH_BASE_URL` | địa chỉ harness |
+
+## Observability (Phoenix)
+
+| Biến | Ý nghĩa |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | điểm đến OTLP |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | điểm đến traces |
+| `PHOENIX_PROJECT` | tên project trên Phoenix |
+| `PHOENIX_ADMIN_SECRET` | secret truy cập Phoenix (qua vault) |
+
+## MCP server & agent
+
+| Biến | Ý nghĩa |
+|---|---|
+| `WORKLOOP_URL` | URL backend cho MCP |
+| `OPENCODE_BIN` | đường dẫn chạy OpenCode |
+| `AGENT_TIMEOUT_SEC` | thời gian chờ agent |
+| `CALLAGENT_DIR` | thư mục làm việc của `call_agent` |
+
+## Engine / sandbox
+
+| Biến | Ý nghĩa |
+|---|---|
+| `LANGFLOW_DATABASE_URL` | bắt buộc cho engine vendored — tránh crash khi chạy standalone |
+| `PYTHONPATH` | bao gồm `src` và `src/workloop/engine` |
+| `EXEC_SANDBOX_FORCE_EMULATION` | chế độ giả lập (chỉ cho dev) |
+
+Xem cách đặt giá trị trong script chạy:
+[Cài đặt — bước 2](/docs/user-guides/workloop-dieu-phoi/cai-dat#bước-2-tạo-script-chạy-backend).

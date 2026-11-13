@@ -1,0 +1,53 @@
+---
+title: AI Agent & Multi-Agent System
+description: Agent là gì, khả năng và giới hạn — vì sao cần nhiều agent phối hợp thay vì một Siêu Agent.
+sidebar_position: 5
+---
+
+# AI Agent & Multi-Agent System
+
+## Agent là gì
+
+**Agent = Model + Tools + Vòng lặp tự quyết.** Khác với chat một lượt, agent:
+
+1. Nhận mục tiêu (task) thay vì chỉ câu hỏi.
+2. **Tự lập kế hoạch** các bước để đạt mục tiêu.
+3. **Dùng công cụ** thực hiện hành động thật (đọc/ghi file, chạy lệnh, gọi API, thao tác UI).
+4. **Quan sát kết quả** rồi quyết định bước tiếp theo — lặp lại tới khi xong hoặc hết ngân sách.
+
+## Khả năng và giới hạn
+
+| Agent làm tốt | Agent cần được kiểm soát |
+|---|---|
+| Thao tác lặp lại, có tiêu chí rõ | Tự nới tiêu chí khi gặp khó (hallucinate "xong") |
+| Làm việc với ngữ cảnh lớn, ít mệt mỏi | Sai lầm tin tưởng — nói dối một cách thuyết phục |
+| Chạy song song, mở rộng ngang | Quá hạn ngân sách token/thời gian mà không báo |
+| Tuân thủ quy trình được mô tả tốt | Mất hướng khi brief thiếu ngữ cảnh |
+
+Kết luận thiết kế: **khả năng hành động càng lớn, nhu cầu điều phối – kiểm chứng – quản trị càng
+lớn**. Đó là lý do ADLC tồn tại.
+
+## Vì sao không xây một Siêu Agent
+
+Nguyên tắc: **tách điều phối khỏi thực thi.**
+
+| | Siêu Agent (bị loại bỏ) | Multi-Agent trong ADLC |
+|---|---|---|
+| Ngữ cảnh | Phải chứa mọi thứ → tràn, nhiễu | Mỗi agent chỉ nhận ngữ cảnh của việc mình |
+| Lỗi | Một điểm hỏng toàn hệ thống | Agent hỏng → re-arm riêng, không kéo theo cả hệ |
+| Năng lực | Một prompt làm mọi vai | Vai chuyên biệt (coder, reviewer, tester) theo persona |
+| Kiểm soát | Khó chặn giữa đường | Điều phối ở tầng riêng, gate/h HITL rõ ràng |
+
+## Hai năng lực phối hợp: Harness vs Orchestrator
+
+- **Harness** giúp *một* agent đủ năng lực hoàn thành nhiệm vụ (memory, tools, sandbox, task loop).
+- **Orchestrator** giúp *nhiều* năng lực phối hợp (routing, dependencies, human approval).
+
+Phân biệt chi tiết + sơ đồ: [Triết lý thiết kế](/docs/fundamentals/triet-ly) ·
+Kiến trúc tầng tương ứng: [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness).
+
+## Đọc tiếp
+
+- Vòng lặp cải tiến agent: [Ba vòng cải tiến](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien)
+- Đánh giá năng lực agent: [Ma trận năng lực](/docs/reference/ma-tran-nang-luc)
+- Giao việc cho agent: [Năm câu hỏi cốt lõi](/docs/fundamentals/nam-cau-hoi)

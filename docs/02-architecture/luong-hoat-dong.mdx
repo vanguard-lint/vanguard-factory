@@ -1,0 +1,79 @@
+---
+title: Luồng hoạt động End-to-End
+description: Một ticket đi xuyên hệ thống — từ nguồn công việc tới PR được merge.
+sidebar_position: 6
+---
+
+# Luồng hoạt động End-to-End (2.4)
+
+> Sơ đồ gốc nằm trong slide ADLC — xuất hình vào `static/img/02-architecture/` khi có.
+
+Một ticket đi xuyên bốn tầng như sau:
+
+```mermaid
+flowchart TD
+    A["Nguồn công việc — Tầng 1<br/>ticket · chatbot · webhook"] --> B["Workflow nhận việc — PENDING"]
+    B --> C["Factory registry — sync spec + agents từ Git"]
+    C --> D["Session — harness tạo phiên agent trên sandbox<br/>task loop: thực thi → test bảo vệ → candidate"]
+    D --> E{"Cổng duyệt"}
+    E -->|cần người| F["Card duyệt HITL"]
+    E -->|tự động| G["PR trên Gitea"]
+    F --> G
+    G --> H["Người duyệt merge → DONE → Monitor"]
+    H -. "kết quả monitor quay lại thành yêu cầu mới" .-> A
+```
+
+## Từng bước chi tiết
+
+1. **Tiếp nhận** — công việc vào control plane qua một trong các kênh tầng 1; task ở trạng thái
+   `PENDING`. Xem: [Trạng thái](/docs/reference/trang-thai).
+2. **Đóng băng spec** — spec và agents được sync từ factory repo; kế hoạch được duyệt rồi đóng băng
+   đúng phiên bản (contract [TaskLoop](/docs/architecture/giao-tiep#contract-taskloop) và [Git](/docs/architecture/giao-tiep#contract-git)).
+3. **Thực thi theo wave** — DAG chạy theo tầng wave; node song song trong wave, có gate chặn giữa.
+4. **Kiểm chứng độc lập** — test bảo vệ chạy bên ngoài quyền sửa của agent; PASS/FAIL đều phải có
+   bằng chứng (xem [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)).
+5. **Cổng duyệt** — nếu cần người, run dừng và hiện card duyệt trên dashboard; người duyệt
+   chấp nhận/từ chối kèm lý do.
+6. **Bàn giao** — thay đổi đi lên nhánh agent trên Gitea; **người duyệt merge**, agent không đẩy
+   thẳng `main`.
+7. **Giám sát** — traces/log/metrics về Phoenix; kết quả monitor quay lại đầu vòng.
+
+## Sơ đồ tuần tự tham chiếu
+
+Sơ đồ dưới đây là **luồng tham chiếu** để hình dung các hệ thống phối hợp thế nào — các bước tự động
+và đường tích hợp thực tế cần **đối chiếu với triển khai** trước khi coi là luồng đang chạy
+(liên quan [Known Issues KI-05](/docs/reference/known-issues)):
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant WF as Workflow
+    participant H as Harness
+    participant M as Agent Memory
+    participant SB as Sandbox
+    participant G as Gitea
+    participant TF as TestForge
+    actor R as Human Reviewer
+
+    U->>WF: Gửi yêu cầu phát triển
+    WF->>WF: Triage & soạn Spec
+    WF->>R: Xin duyệt đặc tả
+    R-->>WF: Duyệt — spec đóng băng
+    WF->>H: Giao task thực thi
+    H->>M: Truy xuất ngữ cảnh dự án
+    M-->>H: Tri thức liên quan
+    H->>SB: Lấy mã nguồn + thực thi thay đổi
+    SB-->>H: Kết quả thực thi
+    H->>G: Push thay đổi / tạo PR
+    WF->>TF: Yêu cầu kiểm chứng độc lập
+    TF-->>WF: Bằng chứng test
+    WF->>R: Xin review cuối
+    R-->>WF: Chấp nhận — merge PR
+```
+
+## Liên quan
+
+- Dữ liệu gì trôi qua từng bước: [Data & Artifact Flow](/docs/architecture/luong-data/data-ma-nguon).
+- Gián đoạn giữa chừng thì sao: [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan).
+- Tự tay chạy luồng này: [Hướng dẫn chạy lần đầu](/docs/user-guides/dung-he-thong-lan-dau).

@@ -1,0 +1,9 @@
+{
+  "label": "Data Flow & Artifact Flow",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "title": "Data Flow & Artifact Flow",
+    "description": "Dữ liệu mã nguồn, telemetry và artifact trôi qua hệ thống như thế nào."
+  }
+}

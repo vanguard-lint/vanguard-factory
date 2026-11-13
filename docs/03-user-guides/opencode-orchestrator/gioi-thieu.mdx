@@ -1,0 +1,56 @@
+---
+title: Agent Orchestrator (OpenCode) — hướng dẫn sử dụng
+description: Agent orchestrator giao việc qua MCP + Slack bot cho người không dùng IDE.
+sidebar_position: 1
+---
+
+# Agent Orchestrator (OpenCode) — hướng dẫn sử dụng
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Agent Orchestrator (OpenCode) |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | ⚪ Placeholder |
+| **Trạng thái hệ thống** | 🚧 Đang hoàn thiện |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+Agent orchestrator là **nguồn công việc bằng ngôn ngữ tự nhiên** của tầng 1: người ra lệnh cho
+orchestrator, orchestrator điều phối workflow qua MCP `workloop-factory`. Kèm theo là **Slack bot**
+cho người không dùng IDE. Vai trong kiến trúc:
+[Tầng 1 · Interface](/docs/architecture/tang-1-interface).
+
+## Khái niệm chính
+
+| Khái niệm | Ý nghĩa |
+|---|---|
+| **MCP `workloop-factory`** | Server MCP (stdio) nối orchestrator với backend workloop |
+| `call_agent` | Gọi một agent chạy việc bất đồng bộ — trả `invocation_id`, theo dõi bằng `call_agent_status` |
+| **Slack bot** | Kênh giao việc/xem kết quả cho PM/Operations |
+| **OpenCode server** | Nền chạy agent; kết nối/ghép cặp qua cơ chế pair của SDK |
+
+## Ví dụ nhanh
+
+Giao việc bằng một câu (yêu cầu cài MCP trước — [Cài đặt, bước 4](/docs/user-guides/workloop-dieu-phoi/cai-dat#bước-4-cắm-mcp-cho-agent-orchestrator)):
+
+```text
+Dùng MCP workloop-factory: run_workflow('<ten-workflow>', fresh=true) và báo job_id.
+```
+
+Bảng tool đầy đủ: [MCP Tools Reference](/docs/reference/mcp-tools).
+
+## Nội dung sẽ bổ sung
+
+- [ ] Cài đặt orchestrator + đăng ký MCP server
+- [ ] Ghép cặp với OpenCode server (pair)
+- [ ] Cấu hình Slack bot — kênh giao việc, kênh báo kết quả
+- [ ] Ví dụ end-to-end: từ câu lệnh tự nhiên tới report
+- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+
+## Liên kết
+
+- Vòng điều phối sau khi giao việc: [Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc)
+- Quan sát kết quả: [Giao diện dashboard](/docs/user-guides/workloop-dieu-phoi/giao-dien-dashboard)

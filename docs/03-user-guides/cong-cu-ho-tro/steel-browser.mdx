@@ -1,0 +1,28 @@
+---
+title: Steel Browser
+description: Computer use / UI testing — agent quan sát và thao tác giao diện thật.
+sidebar_position: 3
+---
+
+# Steel Browser — computer use & UI testing
+
+## Vai trò trong hệ thống
+
+Steel Browser là công cụ **computer use** cho agent: quan sát và thao tác trên giao diện web thật —
+click, điền form, chụp ảnh màn hình, chờ phần tử. Trong hệ sinh thái tầng 3:
+
+- **TestForge (Agent 1)** dùng browser thật để **khám phá UI, tạo locator/trace** rồi sinh test
+  Playwright có căn cứ — [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+- Agent khác dùng để **kiểm tra giao diện** khi task liên quan UI.
+
+## Quy tắc sử dụng
+
+- Browser chạy **trong môi trường bị ràng buộc chính sách** của broker/sandbox
+  ([Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop)).
+- Mỗi thao tác quan trọng (submit, xóa) phải có **bằng chứng** (ảnh/trace) lưu theo lần chạy.
+- Tài khoản kiểm thử cấp qua vault/ref — không nhúng trong kịch bản.
+
+## Liên kết
+
+- Kiểm thử UI có bằng chứng: [Playwright & k6](/docs/user-guides/cong-cu-ho-tro/playwright-k6)
+- Bằng chứng lưu theo job: [Artifact Flow](/docs/architecture/luong-data/artifact)

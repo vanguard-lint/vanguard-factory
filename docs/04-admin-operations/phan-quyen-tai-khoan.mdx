@@ -1,0 +1,55 @@
+---
+title: Phân quyền & tài khoản
+description: Thủ tục vận hành — vai trò, cấp/thu hồi quyền truy cập cho thành viên mới và cũ.
+sidebar_position: 4
+---
+
+# Phân quyền & tài khoản (vận hành)
+
+Mô hình quyền: [Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen).
+Trang này là **thủ tục vận hành** thực tế.
+
+## Các vai trong hệ thống
+
+| Vai | Quyền | Truy cập qua |
+|---|---|---|
+| **Admin** | Quản lý secret, webhook, tenant, cấu hình | Dashboard + API |
+| **Người duyệt** | Duyệt gate HITL, review PR, merge | Tab Duyệt + Gitea |
+| **Dev / QA** | Viết spec, chạy run, đọc kết quả | Dashboard + Gitea |
+| **Người giao việc** | Tạo việc qua chatbot/Slack, xem kết quả | Orchestrator / Slack bot |
+| **Agent (hệ thống)** | Quyền tối thiểu theo task, trong sandbox | Do harness cấp theo phiên |
+
+## Cấp quyền cho thành viên mới — thủ tục
+
+1. Xác định **vai** của thành viên theo bảng trên (nguyên tắc quyền tối thiểu).
+2. Tạo tài khoản ở các hệ thống tương ứng: Gitea (repo), dashboard (auth), tenant trên harness.
+3. Gán **nhóm quyền** thay vì quyền riêng lẻ — dễ thu hồi và kiểm toán.
+4. Cấp secret **qua vault/ref**, không gửi giá trị qua chat/email
+   ([Quản lý secret](/docs/admin-operations/quan-ly-secret)).
+5. Ghi nhận cấp quyền vào log vận hành (ai, ngày, vai).
+
+## Thu hồi khi thành viên rời nhóm — thủ tục
+
+1. Thu hồi tài khoản ở **tất cả** hệ thống (Gitea, dashboard, harness) — liệt kê checklist để không
+   sót.
+2. Thu hồi token/secret liên quan ở dịch vụ nguồn; luân chuyển token chung nếu thành viên từng truy
+   cập.
+3. Rà lại các phiên/agent đang chạy của thành viên; dừng các run không còn người phụ trách.
+4. Ghi nhận vào log vận hành; rà audit trong 1 tuần sau đó.
+
+## Kiểm toán định kỳ
+
+- Hàng tháng: đối chiếu danh sách tài khoản với danh sách thành viên thực tế.
+- Hàng quý: rà vai "admin" — tối thiểu hóa số người giữ quyền cao nhất.
+- Mọi thay đổi quyền đều phải có trong audit log.
+
+## Nội dung sẽ bổ sung
+
+- [ ] Cấu hình auth của dashboard (SSM/OIDC nếu có)
+- [ ] Ma trận quyền chi tiết theo endpoint
+- [ ] Quy trình xin quyền tạm thời (time-bound)
+
+## Liên kết
+
+- Mô hình bảo mật: [Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop)
+- Trách nhiệm theo vai trong luồng duyệt: [Cổng duyệt](/docs/architecture/tang-2-workflow)

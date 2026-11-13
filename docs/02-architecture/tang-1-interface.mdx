@@ -1,0 +1,35 @@
+---
+title: Tầng 1 — Interface
+description: Nguồn công việc — IDE, Git, CI/CD, Chatbot, Jira/Ticketing, Slack; không ép một giao diện duy nhất.
+sidebar_position: 2
+---
+
+# Tầng 1 · Interface — nguồn công việc
+
+> Sơ đồ gốc nằm trong slide ADLC — xuất hình vào `static/img/02-architecture/` khi có.
+
+## Nguyên tắc
+
+**Không ép tổ chức vào 1 giao diện duy nhất.** Công việc được khởi tạo ngay tại môi trường làm
+việc tự nhiên của từng vai trò, tất cả tín hiệu đổ về tầng Workflow:
+
+| Nhóm vai trò | Kênh giao việc |
+|---|---|
+| Lập trình viên & QA | IDE · Git repo · Pipeline CI/CD |
+| PM / Marketing / Operations | Chatbot web · Jira · Ticketing |
+| Agent orchestrator | Agent orchestrator + Slack bot giao việc |
+
+## Các thành phần
+
+- **Webhook nhận việc:** nguồn ngoài (Git, ticketing) đẩy sự kiện vào backend qua
+  `POST /webhooks/{source}` — xem [API Reference](/docs/reference/api-rest).
+- **Agent orchestrator (OpenCode):** giao việc bằng ngôn ngữ tự nhiên qua MCP; có Slack bot cho
+  người không dùng IDE. Xem [HDSD Agent orchestrator](/docs/user-guides/opencode-orchestrator/gioi-thieu).
+- **Dashboard:** giao diện quản trị tập trung cho người vận hành — xem
+  [HDSD Dashboard](/docs/user-guides/workloop-dieu-phoi/giao-dien-dashboard).
+
+## Mối nối với tầng dưới
+
+Mọi nguồn công việc kết thúc bằng một **task trong state machine của Tầng 2** — không có công việc
+nào đi tắt khỏi control plane. Quy ước hợp đồng cho các kết nối này:
+[Giao tiếp & Contracts](/docs/architecture/giao-tiep).

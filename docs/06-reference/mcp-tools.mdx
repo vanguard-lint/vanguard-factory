@@ -1,0 +1,50 @@
+---
+title: MCP Tools
+description: Bảng tra tool MCP đầy đủ của server workloop-factory — tham số, trả về.
+sidebar_position: 2
+---
+
+# MCP Tools Reference
+
+Server MCP `workloop-factory` (stdio) cho agent orchestrator điều phối hệ thống.
+Ví dụ sử dụng nhanh: [Gọi tool MCP](/docs/user-guides/workloop-dieu-phoi/mcp-tools).
+
+## Workflow & runs
+
+| Tool | Tham số chính | Trả về |
+|---|---|---|
+| `configure_workflow` | `name`, `spec` (YAML), `agents?` | xác nhận cấu hình |
+| `list_workflows` | — | danh sách workflow |
+| `get_workflow` | `name` | chi tiết workflow |
+| `run_workflow` | `name`, `fresh?` | `job_id` |
+| `get_run` | `job_id` | trạng thái từng node |
+| `list_runs` | — | các run gần đây |
+| `get_report` | `job_id` | kết quả + tin nhắn cuối từng node |
+| `pause_run` | `job_id`, `action?` | dừng ở ranh giới wave |
+| `resume_run` | `job_id` | chạy tiếp từ checkpoint |
+
+## Gọi agent
+
+| Tool | Tham số chính | Trả về |
+|---|---|---|
+| `call_agent` | `name` (role), `task`, `context?`, `doc_type?` | `invocation_id` (bất đồng bộ) |
+| `call_agent_status` | `invocation_id` | trạng thái invocation |
+
+## PR & Confluence
+
+| Tool | Tham số chính | Trả về |
+|---|---|---|
+| `record_pr` | `lifecycle_id`, `repo`, `branch`, `pr_url`, `pr_number?`, `node?`, `job_id?`, `review_status?` | ghi nhận PR vào vòng đời |
+| `confluence_search` | `cql`, `limit?` | danh sách trang |
+| `confluence_get_page` | `page_id` | nội dung trang |
+| `confluence_create_page` | `space`, `title`, `body_markdown` | trang mới |
+| `confluence_update_page` | `page_id`, `body_markdown`, `title?` | cập nhật (tự tăng version) |
+
+## Cấu hình MCP server
+
+Biến môi trường cho server MCP: `WORKLOOP_URL`, `WORKLOOP_TOKEN`, `FACTORY_PATH`,
+`FACTORY_REPO_URL`, `OPENCODE_BIN`, `AGENT_TIMEOUT_SEC`, `CALLAGENT_DIR`
+([Env vars](/docs/reference/env-vars)).
+
+> Tool MCP thao tác **factory repo** — nội dung factory là tài sản riêng của tenant; không chia sẻ
+> spec/agent thật ra ngoài hệ thống.

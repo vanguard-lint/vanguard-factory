@@ -1,0 +1,48 @@
+---
+title: Viết plugin — "Everything is a plugin"
+description: Điểm mở rộng của harness — cung cấp/sử dụng service, API và event theo contract.
+sidebar_position: 4
+---
+
+# Viết plugin — everything is a plugin
+
+Triết lý: [Triết lý thiết kế](/docs/fundamentals/triet-ly). Trang này là hướng dẫn mở rộng.
+
+## Điểm mở rộng của harness
+
+| Điểm mở rộng | Plugin cung cấp |
+|---|---|
+| Model / Runtime | Thực thi agent (LLM khác, runtime khác) |
+| Tools / Connectors | Hành động trong scope (browser, test, giao tiếp ngoài) |
+| Project Memory | Ngữ cảnh dự án (relational/graph/vector) |
+| Sandbox | Môi trường task |
+| Testing / Verify | Bằng chứng kiểm tra |
+| Artifact / Delivery | Kết quả và bàn giao |
+
+## Contract của một plugin
+
+Plugin **cung cấp hoặc sử dụng** service, API và event theo contract định sẵn:
+
+1. **Khai báo provides/requires** — plugin cung cấp gì, cần gì; không khai báo thì không nối.
+2. **Giao diện rõ ràng** — vào/ra qua API/event được định danh; không gọi chéo nội bộ plugin khác.
+3. **Không phá core** — core giữ danh tính, trạng thái, quyền; plugin bị core kiểm tra tính toàn vẹn
+   (plugin lock).
+4. **Có kiểm chứng** — plugin mới phải qua [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)
+   trước khi vào workflow thật.
+
+## Quy trình đóng góp một plugin
+
+1. Viết đề xuất: điểm mở rộng nào, provides/requires gì, contract ra sao.
+2. Hiện thực + bộ test riêng (xem [Kiểm thử](/docs/developer-docs/kiem-thu)).
+3. PR có bằng chứng chạy thử; người duyệt mảng harness merge.
+4. Đăng ký vào cấu hình harness; chạy smoke test end-to-end.
+
+:::note Nội dung đang bổ sung
+Chi tiết kỹ thuật (khung code plugin, danh sách interface, quy ước đặt tên event) sẽ được bổ sung
+bởi nhóm harness.
+:::
+
+## Liên kết
+
+- Hệ sinh thái plugin hiện có: [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness)
+- SDK/gateway bên dưới plugin: [SDK & Gateway](/docs/developer-docs/sdk-gateway)

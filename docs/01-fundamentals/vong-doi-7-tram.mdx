@@ -1,0 +1,40 @@
+---
+title: Vòng đời công việc — các trạm và cổng duyệt
+description: Triage → Spec → Implement → Verify → Ship → Monitor, kết quả giám sát quay lại thành yêu cầu mới.
+sidebar_position: 4
+sidebar_label: Vòng đời công việc
+---
+
+# Vòng đời ADLC: các trạm và cổng duyệt
+
+Mọi đầu việc đi qua các trạm sau; **kết quả giám sát (Monitor) quay về đầu vòng**,
+trở thành yêu cầu mới — đây là vòng ADLC cloud-native:
+
+```mermaid
+flowchart LR
+    TRI["Triage — phân loại & ưu tiên"] --> SPEC["Spec — đặc tả kỹ thuật"]
+    SPEC --> IMP["Implement — viết mã nguồn"]
+    IMP --> VER["Verify — kiểm thử / xác minh"]
+    VER --> SHIP["Ship — phát hành"]
+    SHIP --> MON["Monitor — giám sát hệ thống"]
+    MON -. "kết quả giám sát trở thành yêu cầu mới" .-> TRI
+    G1{{"① Người duyệt đặc tả"}} -.-> SPEC
+    G2{{"② Người duyệt mã nguồn"}} -.-> VER
+    G3{{"③ Nghiệm thu sản phẩm"}} -.-> SHIP
+```
+
+| Trạm | Agent làm | Con người làm |
+|---|---|---|
+| **Triage** | Phân loại, ưu tiên, gom ngữ cảnh | Chọn thứ tự, xác nhận phạm vi |
+| **Spec** | Soạn đặc tả kỹ thuật từ yêu cầu | **① Duyệt đặc tả** — duyệt xong spec **đóng băng** |
+| **Implement** | Viết mã nguồn trong sandbox | **② Duyệt mã nguồn** sau khi qua test bảo vệ |
+| **Verify** | Chạy kiểm chứng độc lập, thu bằng chứng | Xem bằng chứng, không tin lời agent |
+| **Ship** | Chuẩn bị phát hành, PR | **③ Nghiệm thu sản phẩm** trước khi merge |
+| **Monitor** | Thu traces/log/metrics, phát hiện lệch | Quyết định cải tiến từ dữ liệu |
+
+## Ba cổng duyệt đỏ
+
+Cả ba trạm có con người đứng giữa đều cùng một nguyên tắc: **agent đề xuất — hệ thống và con
+người quyết định**. Cơ chế cụ thể từng cổng trong hệ thống được mô tả ở
+[Tầng 2 · Workflow](/docs/architecture/tang-2-workflow) và
+[Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).

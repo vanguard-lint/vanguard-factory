@@ -254,9 +254,17 @@ export default function AdlcLine(): React.JSX.Element {
     }
 
     let ro: ResizeObserver | null = null;
+    let rebuildRaf = 0;
     if (window.ResizeObserver) {
       ro = new ResizeObserver(function () {
-        if (Math.round(wrap!.clientWidth) !== W) build();
+        // build() thay đổi layout của wrap (đổi chiều cao SVG). Chạy đồng bộ
+        // trong callback ResizeObserver sẽ tạo vòng lặp layout và gây lỗi
+        // "ResizeObserver loop completed with undelivered notifications" —
+        // trì hoãn sang frame kế để vòng lặp observer kết thúc bình thường.
+        if (Math.round(wrap!.clientWidth) !== W) {
+          cancelAnimationFrame(rebuildRaf);
+          rebuildRaf = requestAnimationFrame(build);
+        }
       });
       ro.observe(wrap);
     } else {
@@ -267,6 +275,7 @@ export default function AdlcLine(): React.JSX.Element {
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(rebuildRaf);
       if (ro) ro.disconnect();
       else window.removeEventListener('resize', build);
     };

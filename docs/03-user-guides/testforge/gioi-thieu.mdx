@@ -1,0 +1,72 @@
+---
+title: TestForge AI — hướng dẫn sử dụng
+description: Chạy test bảo vệ, đọc bằng chứng, thẩm định kết quả.
+sidebar_position: 1
+sidebar_label: TestForge — HDSD
+---
+
+# TestForge AI — hướng dẫn sử dụng
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | TestForge AI |
+| **Người phụ trách** | Nguyễn Hữu Quân |
+| **Trạng thái tài liệu** | 🟡 Draft |
+| **Trạng thái hệ thống** | 🔬 Đã chạy thực nghiệm |
+| **Cập nhật** | 2026-11-13 |
+
+Tích hợp TestForge → Sandbox là hướng **đề xuất, chưa kiểm chứng E2E** — xem [KI-05](/docs/reference/known-issues).
+
+:::
+
+TestForge là agent kiểm chứng độc lập của hệ thống — **agent làm việc nói "xong" chưa phải là
+xong**. Kiến trúc & gate: [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+
+## Vai trò sử dụng trong một lần kiểm thử
+
+| Bước | Ai làm | Việc |
+|---|---|---|
+| 1 · Chuẩn bị yêu cầu | BA/QA | Xác định chức năng, dữ liệu, kết quả mong đợi |
+| 2 · Xem kế hoạch | Người dùng | Kiểm tra mode, chức năng được chọn, đầu vào còn thiếu |
+| 3 · Xác nhận & chạy | Người dùng + hệ thống | Chốt môi trường/cấu hình; hệ thống thực thi và lưu bằng chứng |
+| 4 · Thẩm định kết quả | QA / Dev | QA duyệt testcase; Dev đối chiếu lỗi và recommendation |
+
+## Đầu vào cần chuẩn bị
+
+1. **Tài liệu yêu cầu** — chức năng, quy tắc nghiệp vụ, các bước và kết quả mong đợi.
+2. **Môi trường kiểm thử** — link hệ thống đích (SUT), tài khoản có quyền phù hợp, API nếu cần.
+3. **Phạm vi và dữ liệu** — chức năng cần kiểm thử, dữ liệu mẫu, điều kiện PASS/FAIL.
+4. *Nếu kiểm thử hiệu năng:* luồng API từ trace/OpenAPI, profile tải, ngưỡng chấp nhận.
+
+## Đọc kết quả
+
+| Kết quả | Ý nghĩa | Việc tiếp theo |
+|---|---|---|
+| `PASS` / `HEALED_PASS` | Đạt ngay / đạt sau khi sửa test | Đọc bằng chứng; đưa vào regression khi qua gate + được duyệt |
+| `FAIL` / `ERROR` / `PARTIAL` | Chưa đạt / lỗi chạy / chưa hoàn tất | Đối chiếu bước lỗi, dữ liệu, log; xử lý rồi chạy lại |
+| **Recommendation hiệu năng** | Số liệu vi phạm + nguyên nhân khả dĩ + hành động ưu tiên | Dev thực hiện validation plan trước khi kết luận |
+
+Ngưỡng hiệu năng đánh giá theo p50/p95/p99, tỷ lệ lỗi, throughput. Phân loại kết quả:
+PASS / PASS_WITH_WARNING / FAIL — áp dụng override phải ghi người phê duyệt và lý do.
+
+## Bằng chứng lưu theo lần chạy
+
+PASS/FAIL từng testcase · log, ảnh, trace khi phát sinh · mã lần chạy để đối chiếu · video khi có.
+Khi FAIL: dùng log + bằng chứng để xác minh **trước khi** chấp nhận thay đổi.
+
+## Nội dung sẽ bổ sung
+
+- [ ] Cài đặt/kết nối TestForge API
+- [ ] Ví dụ end-to-end đầy đủ (đầu vào → kế hoạch → chạy → báo cáo)
+- [ ] Cấu hình ngưỡng và profile tải
+- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+
+## Liên kết
+
+- Kiến trúc + promotion gate: [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent)
+- Nguyên tắc: [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)
+- Công cụ đi kèm: [Playwright & k6](/docs/user-guides/cong-cu-ho-tro/playwright-k6) ·
+  [Steel Browser](/docs/user-guides/cong-cu-ho-tro/steel-browser) ·
+  [Sandbox Kit](/docs/user-guides/sandbox-kit/gioi-thieu)

@@ -1,0 +1,93 @@
+---
+title: Ma trận năng lực Agent trong SDLC
+description: X1…XP3 — năng lực agent × benchmark tham chiếu × cách chấm.
+sidebar_position: 6
+---
+
+# Ma trận năng lực Agent trong SDLC
+
+Nguồn: slide "Ma trận năng lực Agent trong SDLC" (xuất hình vào `static/img/06-reference/` khi
+có). Ma trận này là chuẩn đánh giá của **System Loop** —
+[Ba vòng cải tiến](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien).
+
+## Năng lực gắn với mọi pha (X)
+
+| Mã | Năng lực | Benchmark tham chiếu | Cách chấm |
+|---|---|---|---|
+| X1 | Lập kế hoạch, phân rã tác vụ nhiều bước | SWE-bench, CodeAgentBench, ProjectEval | Thực thi; giả lập người dùng |
+| X2 | Dùng công cụ, tương tác môi trường, gỡ lỗi lặp | Spider2-v, MLAgentBench, ML-bench, RedCode | Thực thi |
+| X3 | Hiểu ngữ cảnh repo, phụ thuộc chéo file | CoderEval, DevEval, RepoBench, CrossCodeEval | Thực thi; so khớp |
+| X4 | Nhận biết tiến hóa của code và yêu cầu | HumanEvo, SWA-Bench, SWEE-Bench | Thực thi |
+| X5 | Chất lượng phi chức năng: bền vững, bảo mật, hiệu quả | ReCode, RMCBench, ECCO, EffiBench… | Thực thi; tĩnh |
+| X6 | Đa ngôn ngữ, đa phương thức | HumanEval-X, MultiPL-E, Web2Code… | Thực thi; LLM-judge |
+
+## Requirements engineering (RE)
+
+| Mã | Năng lực | Benchmark | Cách chấm |
+|---|---|---|---|
+| RE1 | Trích xuất yêu cầu từ tài liệu | PURE, Jain's, CPSBench | Tĩnh |
+| RE2 | Phân loại yêu cầu | PROMISE | Tĩnh |
+| RE3 | Mô hình hóa yêu cầu thành artifact có cấu trúc | Ferrari's | Người chấm |
+| RE4 | Viết đặc tả theo chuẩn (IEEE) | Krishna's | Người chấm |
+| RE5 | Kiểm chứng yêu cầu, đặc tả | rSDE-Bench, REQuestA | Thực thi; tĩnh |
+| RE6 | Quản lý yêu cầu, xử lý thay đổi, giải xung đột | Chưa có benchmark công khai | – |
+
+## Design (DE) · Implementation (IM)
+
+| Mã | Năng lực | Benchmark | Cách chấm |
+|---|---|---|---|
+| DE1 | Hiểu và truy xuất giao diện UI | Rico, Screen2Words | Tĩnh |
+| DE2 | Thiết kế thuật toán | CLRS-30, BLADE | Tĩnh; thực thi |
+| DE3 | Thiết kế kiến trúc | Chưa có benchmark công khai | – |
+| DE4 | Thiết kế CSDL | Chưa có benchmark công khai | – |
+| DE5 | Sinh thiết kế sáng tạo, tinh chỉnh nhiều vòng | Chưa có | – |
+| IM1 | Sinh code mức hàm | HumanEval, MBPP, HumanEval+ | Thực thi |
+| IM2 | Sinh code mức class | ClassEval | Thực thi |
+| IM3 | Cài đặt tính năng mức repo | CoderEval, DevEval, FEA-Bench | Thực thi |
+| IM4 | Hoàn thành code theo ngữ cảnh repo | RepoBench, CrossCodeEval | Thực thi; so khớp |
+| IM5 | Giải bài thuật toán thi đấu | APPS, LiveCodeBench | Thực thi |
+| IM6 | Text-to-SQL, tương tác CSDL | Spider, BIRD, CoSQL | Thực thi; so khớp |
+| IM7 | Hiểu code: suy luận hành vi, hỏi đáp | CRUXEval, CodeMMLU | Thực thi; so khớp |
+| IM8 | Dịch code giữa ngôn ngữ | PolyHumanEval, CodeTransOcean | Thực thi (DSR@K) |
+| IM9 | Tóm tắt, suy luận kiểu, truy xuất code | CODE-NN, CodeSearchNet, CoSQA | So khớp |
+| IM10 | Code chuyên ngành: dữ liệu, ML, phần cứng | DS-1000, MLAgentBench, VerilogEval | Thực thi |
+
+## Review (RV) · Vận hành (OP) · Tài liệu (DC)
+
+| Mã | Năng lực | Benchmark | Cách chấm |
+|---|---|---|---|
+| RV1 | Tìm lỗi, lỗ hổng, vấn đề kiến trúc trong PR | ReviewBench, c-CRAB, CodeLens | LLM-judge; test |
+| RV2 | Viết nhận xét làm theo là sửa được code | c-CRAB | Thực thi test |
+| RV3 | Phân loại mức nghiêm trọng, cân precision/recall | ReviewBench | LLM-judge |
+| RV4 | Đưa kết luận cuối cho PR | CodeLens | Điểm theo kịch bản |
+| RV5 | Phán đoán thiết kế, khả năng bảo trì | Senior SWE-Bench | Chưa rõ |
+| RV6 | Phân tích tĩnh: API misuse, clone | APIMU4C, BigCloneBench | Tĩnh |
+| OP1 | Thao tác terminal, sysadmin, build | Terminal-Bench | Script kiểm chứng |
+| OP2 | Phát hiện, khoanh vùng sự cố | AIOpsLab, ITBench | Môi trường mô phỏng |
+| OP3 | Tìm nguyên nhân gốc từ telemetry/log/code | ORCA-bench, OpenRCA | Độ chính xác RCA, tỷ lệ ảo giác |
+| OP4 | Xử lý trọn vòng đời sự cố | AIOpsLab | Môi trường mô phỏng |
+| OP5 | Phân tích log | Loghub, LogPM, Loghub-2.0 | Tĩnh theo template |
+| DC1 | Tóm tắt code, sinh comment | CODE-NN, TL-CodeSum | So khớp |
+| DC2 | Hỏi đáp về code | InfiBench, CodeQA, CS1QA | So khớp |
+| DC3 | Sinh README cho cả repo | generate-readme-eval | BLEU, ROUGE |
+| DC4 | Sinh tài liệu cấp repo, kiểm bằng hỏi đáp | SWD-Bench | QA chức năng |
+| DC5 | Giữ tài liệu đồng bộ khi code đổi | Chưa tìm thấy benchmark | – |
+
+## Testing (TE) · Bảo trì (MA) · Tích hợp xuyên pha (XP)
+
+| Mã | Năng lực | Benchmark | Cách chấm |
+|---|---|---|---|
+| TE1 | Phát hiện lỗ hổng bảo mật | Juliet, Big-Vul, PrimeVul | Tĩnh (phân loại) |
+| TE2 | Sinh test đơn vị | SF110, Methods2Test | Thực thi |
+| TE3 | Sinh test tái hiện issue cấp repo | SWT-Bench | Thực thi |
+| TE4 | Phát hiện, dự đoán lỗi | JIT-Defects4J, Bears | Thực thi |
+| MA1 | Sửa lỗi mức hàm, một file | Defects4J, QuixBugs, HumanEvalPack | Thực thi |
+| MA2 | Sửa lỗi cấp repo, nhiều file | SWE-bench, SWA-Bench, SWEE-Bench | Thực thi |
+| MA3 | Chỉnh sửa code theo thay đổi, commit | PyCommits, CoEdPilot | So khớp |
+| MA4 | Bảo trì khi phần mềm tiến hóa dài hạn | SWE-EVO, SWEE-Bench | Thực thi |
+| MA5 | Phân tích log | Loghub, LogPM | Tĩnh |
+| MA6 | Sửa lỗ hổng bảo mật | Vul4J, VJBench, ManyVuls4J | Thực thi |
+| MA7 | Phân tích chương trình: decompile, API misuse | ExeBench, ROBUSTAPI | Thực thi; tĩnh |
+| XP1 | Làm việc end-to-end qua mọi pha SDLC | DevBench | Hỗn hợp |
+| XP2 | Tạo ứng dụng cấp project từ mô tả | ProjectEval | Giả lập người dùng |
+| XP3 | Sửa lỗi, thêm tính năng, refactor, đa ngôn ngữ | SWE-PolyBench, CodeXGLUE | Thực thi |

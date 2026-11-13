@@ -1,0 +1,51 @@
+---
+title: Giao diện dashboard
+description: Các tab của dashboard — Dashboard, Runs, Duyệt, Factory, Agents, Webhook, Automation, Integration, Secret.
+sidebar_position: 4
+---
+
+# Giao diện dashboard
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Workloop — điều phối |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | 🟡 Draft |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+Ảnh chụp màn hình sẽ bổ sung vào `static/img/user-guides/` sau.
+
+:::
+
+Dashboard là giao diện quản trị tập trung của tầng Workflow. Các tab chính:
+
+| Tab | Dùng để |
+|---|---|
+| **Dashboard** | Tổng quan hệ thống — health, số run, xu hướng |
+| **Workloop** | Canvas workflow — xem cấu trúc DAG, vị trí node (layout) |
+| **Runs** | Danh sách run, chi tiết job, timeline (Gantt), report từng node |
+| **Duyệt** | **Card duyệt HITL** — đọc brief/diff/bằng chứng, chấp nhận/từ chối kèm lý do |
+| **Factory** | Workflow đã đăng ký (sau sync), cấu hình tenant |
+| **Agents** | Persona agent theo role |
+| **Webhook** | Quản lý webhook nguồn ngoài |
+| **Automation** | Quy tắc tự động hóa (phê duyệt tự động theo cấu hình) |
+| **Integration** | Tích hợp ngoài (ví dụ Confluence) |
+| **Secret** | Quản lý ref secret (không hiển thị giá trị) |
+
+## Luồng duyệt HITL trong tab Duyệt
+
+1. Node `need_review: human` tới lượt → run tạm dừng, tạo work request duyệt.
+2. Card hiện brief + sản phẩm + bằng chứng kèm theo.
+3. Người duyệt chọn chấp nhận/từ chối **kèm lý do**.
+4. Run tiếp tục; quyết định được ghi vào log trung lập.
+
+Cơ chế bên dưới: [Cổng duyệt](/docs/architecture/tang-2-workflow#cổng-duyệt-gates) ·
+[TaskLoop contract](/docs/architecture/giao-tiep#contract-taskloop).
+
+## Kết quả đúng phải thấy
+
+Mở tab **Runs** sau một run: mọi node có trạng thái terminal; run có gate chờ duyệt xuất hiện ở
+tab **Duyệt** với đầy đủ ngữ cảnh để ra quyết định.
