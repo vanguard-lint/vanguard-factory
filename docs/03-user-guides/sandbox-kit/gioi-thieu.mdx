@@ -4,8 +4,6 @@ description: Tạo phiên, làm việc với VFS, review diff, merge thay đổi
 sidebar_position: 1
 ---
 
-# Sandbox Kit — hướng dẫn sử dụng
-
 :::note Thông tin trang
 
 | | |
@@ -13,48 +11,31 @@ sidebar_position: 1
 | **Hệ thống** | Sandbox Kit |
 | **Người phụ trách** | Nguyễn Trung Kiên |
 | **Trạng thái tài liệu** | 🟡 Draft |
-| **Trạng thái hệ thống** | ✅ Đã triển khai |
 | **Cập nhật** | 2026-11-13 |
 
 :::
 
-Sandbox Kit là tầng thực thi cô lập — Broker · VFS · Provisioner · Warm pool. Kiến trúc:
-[Tầng 4 · Sandbox](/docs/architecture/tang-4-sandbox).
-
-## Khái niệm chính
-
-| Khái niệm | Ý nghĩa |
-|---|---|
-| **Phiên (session)** | Môi trường bật khi cần, giới hạn tài nguyên & phạm vi riêng |
-| **VFS** | Tệp dự án lưu riêng, sống độc lập với phiên — phiên tắt, tệp vẫn còn |
-| **Broker** | Cổng API duy nhất: cấp phiên, đồng bộ tệp, chạy lệnh |
-| **Review** | Giao diện xem Agent đã đổi gì trước khi nhận thay đổi |
-| **Plugin vai-sandbox** | Bộ công cụ để agent gọi sandbox đúng lúc, đúng việc |
+Phần này hướng dẫn **vận hành** Sandbox Kit: cấp phiên, làm việc với tệp, gộp thay đổi.
+Giới thiệu hệ thống và kiến trúc xem tại [Tầng 4 · Sandbox](/docs/architecture/tang-4-sandbox/tong-quan).
 
 ## Luồng sử dụng điển hình
 
-1. **Chuẩn bị** — lưu script/cấu hình trong workspace; chọn môi trường phù hợp bài test.
-2. **Yêu cầu chạy** — broker cấp phiên khi cần; đồng bộ tệp thay đổi rồi thực thi trong môi trường
-   riêng.
-3. **Lưu để dùng lại** — kết quả về hệ thống gọi; script giữ trong workspace để chạy hồi quy.
+1. **Chuẩn bị** — clone repo vào workspace hoặc nạp tệp qua API VFS.
+2. **Cấp phiên & chạy lệnh** — broker cấp sandbox, thực thi lệnh có timeout.
+3. **Gộp thay đổi** — commit/push lên nhánh `agent-*`; người duyệt merge ở Gitea.
 
-## Review diff & merge
+## Các trang hướng dẫn
 
-- Thay đổi của agent hiển thị qua **giao diện review** trước khi nhận — khớp nguyên tắc
-  [Git contract](/docs/architecture/giao-tiep#contract-git): người duyệt merge.
-- Dòng git: clone → VFS (không giữ `.git`) → commit trong vùng tạm → push lên nhánh agent.
-
-## Nội dung sẽ bổ sung
-
-- [ ] Cài đặt broker + provisioner trên hạ tầng nội bộ
-- [ ] Tạo/quản lý phiên — lệnh API chi tiết
-- [ ] Đồng bộ tệp VFS — quy trình pull/push
-- [ ] Sử dụng giao diện review diff
-- [ ] Cấu hình warm pool & giới hạn tài nguyên
-- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+1. [Cài đặt](/docs/user-guides/sandbox-kit/cai-dat) — triển khai broker, VFS, OpenSandbox server
+2. [Tạo & quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien) — cấp phiên, chạy lệnh,
+   thu hồi
+3. [Đồng bộ tệp VFS](/docs/user-guides/sandbox-kit/dong-bo-vfs) — đọc/ghi tệp, dòng Git
+4. [Review diff & merge](/docs/user-guides/sandbox-kit/review-diff) — xem thay đổi, merge
+5. [Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi) —
+   cpu/memory/ttl, gia hạn, lệnh bị chặn
 
 ## Liên kết
 
-- Kiến trúc + bảo mật nhiều lớp: [Tầng 4](/docs/architecture/tang-4-sandbox) ·
+- Kiến trúc: [Tầng 4 · Sandbox](/docs/architecture/tang-4-sandbox/tong-quan) ·
   [Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop)
 - Luồng E2E: [Luồng hoạt động End-to-End](/docs/architecture/luong-hoat-dong)

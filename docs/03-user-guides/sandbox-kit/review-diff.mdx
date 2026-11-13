@@ -1,0 +1,38 @@
+---
+title: Review diff & merge
+description: Xem thay đổi của agent và gộp vào nhánh chính.
+sidebar_position: 5
+---
+
+# Review diff & merge
+
+Merge cuối do **người duyệt thực hiện ở Gitea**.
+
+## Xem thay đổi
+
+| Cần xem | Cách làm |
+|---|---|
+| Thay đổi từng file | `GET /api/v1/vfs/git/status?workspace_id=<ws>` hoặc dashboard |
+| Nội dung file ở nhánh khác | `GET /api/v1/vfs/git/blob?workspace_id&ref&path` |
+| Lịch sử sửa của một file | `GET /api/v1/vfs/revisions?workspace_id&path` |
+
+## Merge
+
+```
+agent push lên nhánh agent-*
+  → người duyệt xem diff ở Gitea
+  → người duyệt merge ở Gitea
+  → workspace cập nhật: gọi git/pull (human-only)
+```
+
+- Agent **không thể** tự merge — hệ thống chặn pull với role agent.
+- Conflict khi pull → xử lý ở Gitea rồi reset workspace.
+
+## Kết quả đúng phải thấy
+
+- Push của agent chỉ nằm trên nhánh `agent-*` — nhánh chính không đổi nếu chưa có người merge.
+- Mọi thay đổi của agent xem được qua `git/status` trước khi merge.
+
+## Liên kết
+
+- Dòng Git & phân vai: [Đồng bộ tệp VFS](/docs/user-guides/sandbox-kit/dong-bo-vfs)

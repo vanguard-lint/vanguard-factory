@@ -1,0 +1,47 @@
+---
+title: Tổng quan
+description: Sandbox Kit là gì — môi trường thực thi cô lập cho AI agent.
+sidebar_position: 1
+---
+
+# Tổng quan — Sandbox Kit
+
+## Vấn đề giải quyết
+
+AI agent cần chạy lệnh, kịch bản và kiểm thử trên mã nguồn thật. Chạy thẳng trên máy chủ
+dùng chung thì nguy hiểm (lệnh sai phá hỏng hệ thống) và dễ xung đột tài nguyên khi nhiều
+agent chạy cùng lúc.
+
+**Sandbox Kit** giải quyết điều đó bằng môi trường thực thi cô lập:
+
+- **Phiên (session)** — sandbox bật khi cần, giới hạn CPU/bộ nhớ/thời gian riêng cho mỗi
+  lần chạy; chạy song song nhiều agent không xung đột.
+- **Mã nguồn nằm riêng** — tệp dự án lưu ở VFS, không nằm trong sandbox; phiên kết thúc,
+  tệp vẫn còn nguyên.
+- **Kiểm soát tập trung** — mọi thao tác đi qua một cổng broker duy nhất; lệnh bị lọc trước
+  khi thực thi; không cần mở SSH/VPN cho agent.
+- **Thay đổi được duyệt** — agent làm việc trên nhánh riêng, người duyệt merge sau khi xem
+  thay đổi.
+
+## Khái niệm chính
+
+| Khái niệm | Ý nghĩa |
+|---|---|
+| **Phiên (session)** | Sandbox cách ly bật khi cần — vòng đời `STANDBY → STARTING → RUNNING → PAUSED` |
+| **VFS** | Nơi lưu tệp dự án, sống độc lập với phiên |
+| **Broker** | Cổng REST duy nhất: cấp phiên, đồng bộ tệp, chạy lệnh |
+| **Command policy** | Bộ lọc lệnh — chặn phá hoại, cảnh báo lệnh nhạy cảm |
+| **Dashboard & CLI** | Quản trị phiên và dùng cho agent/CI |
+
+## Triển khai trên hạ tầng nội bộ
+
+Sandbox Kit tự dựng trên hạ tầng nội bộ — kiểm soát trọn vẹn quyền truy cập và dữ liệu,
+không phụ thuộc dịch vụ sandbox bên ngoài. Chi tiết kiến trúc từng thành phần:
+[Broker](/docs/architecture/tang-4-sandbox/broker) ·
+[VFS](/docs/architecture/tang-4-sandbox/vfs) ·
+[OpenSandbox server](/docs/architecture/tang-4-sandbox/opensandbox-server).
+
+## Bắt đầu dùng
+
+Xem [HDSD Sandbox Kit](/docs/user-guides/sandbox-kit/gioi-thieu) — cài đặt, cấp phiên,
+làm việc với tệp, merge thay đổi.

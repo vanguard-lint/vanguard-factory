@@ -1,0 +1,31 @@
+---
+title: VFS
+description: Tệp dự án sống độc lập với phiên — kèm dòng Git phân vai.
+sidebar_position: 4
+---
+
+# VFS — tệp dự án
+
+## Nguyên tắc
+
+- **VFS là nguồn dữ liệu chính** — tệp dự án lưu trong VFS, sống độc lập với phiên: phiên
+  tắt, tệp vẫn còn. Phiên chỉ là môi trường thực thi.
+- **Lịch sử Git nằm ở bản Git riêng của workspace** — mỗi workspace có một worktree Git đi
+  kèm để clone/commit/push tạo lịch sử; `.git` không nằm trong VFS.
+- **Sửa tệp có lịch sử** — mỗi file giữ tối đa 20 bản revision, có diff trước/sau.
+- **Tệp tạm không vào VFS** — `/scratch/*`, `/tmp/*` chỉ sống trong phiên.
+
+## Phân vai trên dòng Git
+
+| Role | Quyền |
+|---|---|
+| `agent` | Chỉ tạo nhánh/commit/push trên nhánh `agent-*` — vi phạm bị từ chối 403 |
+| `human` | Toàn quyền; riêng `pull` (merge về nhánh hiện tại) là human-only |
+
+Commit/push **không bao giờ tự chạy** — agent hoặc người phải gọi.
+
+## Liên kết
+
+- Thao tác tệp & Git: [Đồng bộ tệp VFS](/docs/user-guides/sandbox-kit/dong-bo-vfs)
+- Duyệt thay đổi: [Review diff & merge](/docs/user-guides/sandbox-kit/review-diff)
+- Data flow mã nguồn: [Data Flow — mã nguồn](/docs/architecture/luong-data/data-ma-nguon)

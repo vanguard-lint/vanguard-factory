@@ -1,0 +1,72 @@
+---
+title: Tạo & quản lý phiên
+description: Cấp phiên, thực thi lệnh, thu hồi — qua broker REST.
+sidebar_position: 3
+---
+
+# Tạo & quản lý phiên
+
+Mọi thao tác qua **broker REST**.
+
+## 1 · Lấy token
+
+`POST /auth/login` (`{email, password}`) → token, gửi kèm header
+`Authorization: Bearer <token>` ở mọi lệnh sau.
+
+## 2 · Cấp phiên
+
+```bash
+curl -X POST http://<broker-url>/api/v1/management/sessions \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"workspace_id": "<ws>", "cpu": "2", "memory": "4Gi", "ttl": 3600}'
+```
+
+## 3 · Chạy lệnh trong phiên
+
+```bash
+curl -X POST http://<broker-url>/api/v1/agent/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"action": {"runShellCommand": {"command": "pytest -q"}}, "session_id": "<id>"}'
+```
+
+Action khả dụng: `runShellCommand` · `runCommand` · `runReadFile` · `runWriteFile` ·
+`runEditFile` · `writeFiles` · `listDirectory` · `mkdir` · `findFiles` · `grep` ·
+`runGitCommand`.
+
+Kết quả trả `{status, stdout, stderr, exitCode, durationMs}` — `success` ⇔ `exitCode == 0`.
+
+## 4 · Thu hồi
+
+```bash
+curl -X DELETE http://<broker-url>/api/v1/management/sessions/<id> \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Các thao tác khác — `/api/v1/management`
+
+| Thao tác | REST |
+|---|---|
+| Liệt kê / chi tiết phiên | `GET /sessions` · `GET /sessions/{id}` |
+| Tạm dừng / tiếp tục | `POST /sessions/{id}/pause` · `/resume` |
+| Gia hạn thời gian | `POST /sessions/{id}/renew` — body `{ttl}` |
+| Gắn dự án từ VFS | `POST /sessions/{id}/attach-project` |
+| Chẩn đoán | `GET /sessions/{id}/diagnostics` |
+
+## Quy tắc khi dùng
+
+- Lệnh luôn kèm **timeout** (mặc định 300s, tối đa 1800s).
+- Một số lệnh bị policy chặn (`rm /`, `touch`, `tee`...) hoặc cảnh báo (`cp`, `mv`...).
+- Trạng thái phiên: `STANDBY → STARTING → RUNNING → PAUSED` — xem
+  `GET /api/v1/agent/sessions/{id}/status`.
+
+## Kết quả đúng phải thấy
+
+- Cấp phiên xong, status chuyển `RUNNING` sau vài giây.
+- Lệnh quá timeout bị cắt, không chạy vô hạn.
+- Thu hồi phiên xong, tệp dự án vẫn còn trong VFS.
+
+## Liên kết
+
+- Đồng bộ tệp: [Đồng bộ tệp VFS](/docs/user-guides/sandbox-kit/dong-bo-vfs)
+- Trần tài nguyên: [Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi)

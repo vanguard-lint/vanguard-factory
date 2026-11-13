@@ -1,0 +1,29 @@
+---
+title: Dashboard & CLI
+description: Quản trị phiên và tích hợp agent — dashboard, CLI client, plugin vai-sandbox.
+sidebar_position: 6
+---
+
+# Dashboard & CLI — vận hành & tích hợp
+
+## Dashboard
+
+- Quản trị phiên: danh sách, trạng thái, tài nguyên đang dùng.
+- Console chạy lệnh và event log.
+
+## CLI client
+
+- Dùng cho agent/CI — các lệnh read/write/shell/git trên phiên.
+- Tự cấp phiên khi cần, cấu hình qua file config cục bộ hoặc biến môi trường.
+
+## Tích hợp agent
+
+- Harness gọi broker qua plugin **vai-sandbox** — bộ tools REST (quản lý phiên, thực thi,
+  VFS); URL broker và token cấp qua secrets.
+- Token xác thực dạng `Bearer`, cấp qua `/auth/login` (email công ty); hiện token chủ yếu
+  dùng cho đăng nhập dashboard.
+
+## Liên kết
+
+- Dùng từ agent: [Tạo & quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien)
+- Xác thực & quyền: [Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen)

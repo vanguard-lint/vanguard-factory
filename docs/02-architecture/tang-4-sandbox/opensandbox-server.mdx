@@ -1,0 +1,31 @@
+---
+title: OpenSandbox server
+description: Cấp sandbox cách ly theo yêu cầu — cấu hình qua config.toml.
+sidebar_position: 5
+---
+
+# OpenSandbox server — cấp sandbox cách ly
+
+## Vai trò
+
+- Cấp sandbox **cách ly** (chạy ở user space) theo yêu cầu của broker; broker kết nối vào
+  execd bên trong sandbox để thực thi lệnh trực tiếp.
+- Cấu hình qua `config.toml` — runtime, tài nguyên, thời gian sống tối đa, egress.
+
+## Tài nguyên & thời gian sống
+
+| Giới hạn | Giá trị |
+|---|---|
+| CPU / bộ nhớ mỗi phiên | Đặt khi cấp phiên (mặc định 2 CPU / 4Gi) |
+| Thời gian sống tối đa của sandbox | 86400s (cấu hình server) |
+| TTL phiên | Đặt khi cấp phiên (mặc định 3600s) |
+
+## Tạo trước — start sau (STANDBY)
+
+Có thể tạo sandbox ở trạng thái `STANDBY` (chưa start) rồi start khi cần — tránh chờ khởi
+tạo lúc cần chạy ngay.
+
+## Liên kết
+
+- Giá trị đặt khi dùng: [Tài nguyên & vòng đời phiên](/docs/user-guides/sandbox-kit/tai-nguyen-vong-doi)
+- Triển khai: [Cài đặt](/docs/user-guides/sandbox-kit/cai-dat)

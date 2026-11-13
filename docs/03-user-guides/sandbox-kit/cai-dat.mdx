@@ -1,0 +1,38 @@
+---
+title: Cài đặt
+description: Triển khai Sandbox Kit — OpenSandbox server, VFS service, broker.
+sidebar_position: 2
+---
+
+# Cài đặt
+
+## Các bước
+
+1. **OpenSandbox server** — cài theo hướng dẫn OpenSandbox, chạy với `config.toml` trong repo
+   `sandbox-kit`.
+2. **VFS service** — `cd vfs-service && npm install && npm run dev`.
+3. **Broker** — cài Python venv theo `broker/requirements.txt`, chạy
+   `python -m uvicorn broker.broker:app --host 0.0.0.0`.
+4. **Biến môi trường `.env`** — provider, token Git (Gitea/GitHub), thư mục dự án cho phép
+   nạp (`HOST_PROJECT_ROOTS`), timeout thực thi.
+5. **Tài khoản dashboard** — đăng ký + xác nhận email qua `/auth/*`; tài khoản đầu tiên là
+   admin.
+
+## Triển khai server thật
+
+```bash
+bash deploy/setup-server.sh /opt/sandbox-kit
+```
+
+Script tự cài dependencies, sinh `.env`, tạo 2 service systemd (`sandbox-broker`,
+`sandbox-vfs`).
+
+## Kết quả đúng phải thấy
+
+- `GET /health` của broker trả 200.
+- Đăng nhập `/dashboard` được bằng tài khoản vừa tạo.
+- Tạo phiên thử nghiệm thành công.
+
+## Liên kết
+
+- Tạo & quản lý phiên: [Quản lý phiên](/docs/user-guides/sandbox-kit/quan-ly-phien)
