@@ -1,0 +1,50 @@
+---
+title: Môi trường triển khai
+description: Thành phần, cổng mặc định, quy ước biến môi trường và tunnel.
+sidebar_position: 1
+---
+
+# Môi trường triển khai
+
+## Các thành phần & cổng mặc định (tham khảo)
+
+| Thành phần | Cổng mặc định | Ghi chú |
+|---|---|---|
+| Backend workloop (REST API) | `8100` | cấu hình qua script chạy |
+| Frontend dashboard | `8903` | biến `WL_PORT` |
+| Harness (DSH) | `3080` | địa chỉ + token qua env |
+| Gitea | `3000` | repo nội bộ |
+| Sandbox broker | `8000` (bản mới) / `9980` (bản cũ) | qua deploy compose |
+| Phoenix | theo cấu hình | endpoint qua `OTEL_EXPORTER_OTLP_*` |
+
+> Cổng chỉ là giá trị mặc định tham khảo — cấu hình thật qua biến môi trường; **không public các
+> cổng ra ngoài mà không có lớp xác thực**.
+
+## Quy ước biến môi trường
+
+1. Mọi giá trị nhạy cảm (token, cred repo) cấp qua **env trên host** hoặc vault — không commit,
+   không ghi trong docs. Bảng tên biến: [Env vars](/docs/reference/env-vars).
+2. Script chạy (`run_backend.sh`) đặt **ngoài repo**.
+3. Một máy có thể chạy nhiều tenant — phân tách bằng `WORKLOOP_DB`, `FACTORY_PATH`, tên workflow.
+
+## Mạng & tunnel
+
+- Hệ thống chạy trên hạ tầng nội bộ; khi cần truy cập từ xa dùng **tunnel có xác thực** — không mở
+  port trực tiếp ra internet.
+- Webhook từ nguồn ngoài đi qua lớp xác thực riêng của backend
+  ([Bảo mật nhiều lớp](/docs/architecture/phan-quyen-bao-mat/bao-mat-nhieu-lop)).
+
+## Quy trình triển khai mới
+
+1. Chuẩn bị máy: Python 3.11, git, tài nguyên đủ cho sandbox.
+2. Cài workloop + tạo script chạy — [Cài đặt](/docs/user-guides/workloop-dieu-phoi/cai-dat).
+3. Chuẩn bị Gitea + factory repo trống (branch `main`).
+4. Khởi động harness + broker — HDSD từng mảng:
+   [Harness](/docs/user-guides/harness-dsh/gioi-thieu) ·
+   [Sandbox Kit](/docs/user-guides/sandbox-kit/gioi-thieu).
+5. Bật Phoenix (tuỳ chọn nhưng khuyến nghị) — [Phoenix](/docs/user-guides/cong-cu-ho-tro/phoenix-observability).
+6. Chạy smoke test — [Kết quả đúng phải thấy](/docs/user-guides/workloop-dieu-phoi/cai-dat#kết-quả-đúng-phải-thấy).
+
+## Kết quả đúng phải thấy
+
+`curl :8100/api/health` → `{"ok":true}`; sync factory thành công và trả SHA.

@@ -1,0 +1,60 @@
+---
+title: Runbook sự cố
+description: Sách xử lý — run treo, node BLOCKED, sandbox hết RAM, 401, sync lỗi.
+sidebar_position: 5
+---
+
+# Runbook sự cố
+
+Mỗi sự cố: triệu chứng → chẩn đoán → xử lý → phòng ngừa. Xử cố cấp người dùng:
+[Xử cố Workloop](/docs/user-guides/workloop-dieu-phoi/xu-co). Xác định nhanh ảnh hưởng của từng
+thành phần lỗi: [Phụ thuộc & sức khỏe](/docs/admin-operations/monitoring-canh-bao).
+
+## RB-01 · Run treo (`in_progress` quá lâu)
+
+- **Chẩn đoán:** log backend; trạng thái harness/broker; node đang dính ở đâu.
+- **Xử lý:** nếu harness chết → khởi động lại harness + cập nhật token
+  ([401](/docs/user-guides/workloop-dieu-phoi/xu-co)); nếu node chết thật → dừng run, chạy lại
+  node theo checkpoint.
+- **Phòng ngừa:** đặt `timeout_s`/`stall_s` cho node; theo dõi
+  [cảnh báo](/docs/admin-operations/monitoring-canh-bao).
+
+## RB-02 · Node BLOCKED
+
+- **Chẩn đoán:** report node — thường là thiếu thông tin/ngữ cảnh trong brief.
+- **Xử lý:** bổ sung brief hoặc cung cấp ngữ cảnh qua HITL; node gate thì phải xử lý tới `DONE`.
+- **Phòng ngừa:** brief phải tự đủ — [Viết agent persona & brief](/docs/developer-docs/viet-agent-persona).
+
+## RB-03 · Sandbox hết RAM/OOM
+
+- **Chẩn đoán:** log broker/metrics tài nguyên; phiên nào chiếm nhiều.
+- **Xử lý:** dừng phiên dư thừa; chạy lại task trên phiên mới; xem xét tăng hạn ngạch cho loại
+  task nặng.
+- **Phòng ngừa:** cấu hình giới hạn tài nguyên mỗi phiên
+  ([Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen)); warm pool đủ kích
+  thước.
+
+## RB-04 · 401 hàng loạt sau restart DSH
+
+- **Xử lý:** cập nhật `DSH_TOKEN` → restart backend. Xem chi tiết:
+  [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co).
+- **Phòng ngừa:** đưa việc cập nhật token vào quy trình restart DSH (checklist).
+
+## RB-05 · Sync factory lỗi (git)
+
+- **Chẩn đoán:** `git ls-remote <url>` thủ công; kiểm tra cred/URL env.
+- **Xử lý:** sửa env, sync lại. Workflow cũ vẫn chạy theo chỉ mục đã sync trước đó.
+- **Phòng ngừa:** webhook push factory → thông báo sync; kiểm tra sau khi đổi cred.
+
+## RB-06 · Phoenix mất trace
+
+- **Chẩn đoán:** biến `WORKLOOP_TRACING` đã bật? endpoint OTLP đúng? Phoenix còn sống?
+- **Xử lý:** bật lại/env đúng, restart backend; dữ liệu mất chỉ ảnh hưởng quan sát, không ảnh hưởng
+  kết quả run.
+- **Phòng ngừa:** đưa Phoenix vào kiểm sống định kỳ.
+
+## RB-07 · Webhook không tới
+
+- **Chẩn đoán:** nguồn ngoài có retry không; log backend nhận webhook; cấu hình tunnel/firewall.
+- **Xử lý:** sửa cấu hình, yêu cầu nguồn gửi lại; đối chiếu audit log.
+- **Phòng ngừa:** kiểm tra webhook sau mỗi lần đổi mạng/tunnel.

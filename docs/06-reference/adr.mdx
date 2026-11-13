@@ -1,0 +1,69 @@
+---
+title: Architecture Decision Records (ADR)
+description: Ghi nhận các quyết định kiến trúc — bối cảnh, quyết định, hậu quả.
+sidebar_position: 10
+sidebar_label: ADR
+---
+
+# Architecture Decision Records (ADR)
+
+ADR ghi lại **các quyết định kiến trúc quan trọng** của ADLC — vì sao chọn hướng này chứ không
+hướng khác — để người đến sau hiểu bối cảnh thay vì đoán. Vòng cải tiến
+[System Loop](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien) cũng dùng ADR làm đầu ra:
+mỗi quyết định cải tiến hệ thống được ghi thành một bản ADR mới.
+
+## Mẫu ADR
+
+```markdown
+## ADR-00xx: <tên quyết định>
+
+- Ngày: <yyyy-mm-dd>
+- Trạng thái: Proposed | Accepted | Deprecated | Superseded by ADR-00yy
+- Người quyết định: <tên / nhóm>
+
+### Bối cảnh
+Vấn đề cần giải quyết, ràng buộc, các phương án đã cân nhắc.
+
+### Quyết định
+Chọn hướng nào, cụ thể ra sao.
+
+### Hậu quả
+Điều gì tốt hơn, điều gì đánh đổi, cần theo dõi gì.
+```
+
+## ADR đã ghi nhận
+
+### ADR-0001: Tách điều phối khỏi thực thi — không xây Siêu Agent
+
+- **Ngày:** 2026-11-13 · **Trạng thái:** Accepted
+- **Bối cảnh:** Một agent duy nhất làm mọi vai tràn ngữ cảnh, khó kiểm soát, lỗi lan toàn hệ thống.
+- **Quyết định:** Tách **Harness** (năng lực một agent) khỏi **Orchestrator** (phối hợp nhiều
+  năng lực); hệ sinh thái plugin nối vào harness qua contract.
+- **Hậu quả:** Phải duy trì contract giữa các thành phần; đổi lại mỗi phần mở rộng độc lập và có
+  thể kiểm chứng riêng.
+
+### ADR-0002: Contract là nguồn sự thật — DB chỉ là chỉ mục
+
+- **Ngày:** 2026-11-13 · **Trạng thái:** Accepted
+- **Bối cảnh:** Trạng thái task nằm nhiều nơi (DB, cache, phiên agent) dễ lệch nhau.
+- **Quyết định:** Trạng thái chính thức đọc từ [TaskLoop contract](/docs/architecture/giao-tiep#contract-taskloop);
+  DB backend chỉ giữ chỉ mục tra cứu, sync từ nguồn.
+- **Hậu quả:** Đọc trạng thái đi qua một đường duy nhất; đánh đổi là phải sync và chịu độ trễ nhỏ.
+
+### ADR-0003: Một agent — một nhánh; người duyệt merge
+
+- **Ngày:** 2026-11-13 · **Trạng thái:** Accepted
+- **Bối cảnh:** Nhiều agent ghi chung một nhánh gây xung đột và không truy vết được.
+- **Quyết định:** [Git contract](/docs/architecture/giao-tiep#contract-git): mỗi phiên một nhánh,
+  thay đổi qua PR, merge thuộc người duyệt.
+- **Hậu quả:** Truy vết rõ ràng, an toàn; chi phí review tăng — chấp nhận vì niềm tin quan trọng hơn.
+
+### ADR-0004: TestForge chạy thực thi trong Sandbox Kit
+
+- **Ngày:** 2026-11-13 · **Trạng thái:** Proposed — chờ kiểm chứng E2E
+- **Bối cảnh:** TestForge cần môi trường thực thi cô lập; Sandbox Kit là thành phần cung cấp môi
+  trường của hệ thống.
+- **Quyết định đề xuất:** TestForge điều phối bài test, Sandbox cấp phiên và đồng bộ tệp; script giữ
+  trong workspace để chạy hồi quy.
+- **Hậu quả / việc cần làm:** Kiểm chứng bằng **một lần chạy end-to-end thật** trước khi đưa vào
+  quy trình chính thức — xem [Known Issues](/docs/reference/known-issues) (KI-05).

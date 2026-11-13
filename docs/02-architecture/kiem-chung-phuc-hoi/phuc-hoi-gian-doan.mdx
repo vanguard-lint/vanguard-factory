@@ -1,0 +1,35 @@
+---
+title: Phục hồi gián đoạn
+description: Đối chiếu trạng thái đã lưu — tuyệt đối không tạo lại kết quả.
+sidebar_position: 3
+---
+
+# Phục hồi gián đoạn (2.8c)
+
+**Gián đoạn không làm mất việc.** Khi mất phản hồi (mạng, phiên rớt, backend khởi động lại),
+bên phục hồi **đối chiếu trạng thái đã lưu** — không tạo lại kết quả:
+
+| PHASE ĐÃ LƯU | CÁCH TIẾP TỤC | TUYỆT ĐỐI KHÔNG |
+|---|---|---|
+| Đã lưu bản code | Kiểm tra lại đúng nội dung đã lưu | ❌ Gọi model tạo bản thay thế |
+| Đã lưu bằng chứng | Dùng lại kết quả của attempt gốc | ❌ Chạy lại model hay test |
+| Đang chờ duyệt | Khôi phục đúng điểm duyệt | ❌ Tự chấp nhận thay người |
+
+Lợi ích kép: **tiết kiệm chi phí** (không chạy lại phần đã xong) — và **kết quả không bị đổi ngầm**
+(kết quả gốc là bất biến). Người luôn là bên CHẤP NHẬN cuối cùng.
+
+## Cơ chế trong hệ thống
+
+- **Checkpoint theo trạng thái** — node có trạng thái lưu trước khi hành động; khôi phục đọc lại
+  trạng thái, không suy đoán. Xem [Trạng thái](/docs/reference/trang-thai).
+- **Stall → re-arm** — khi phiên không tiến triển, vòng điều khiển chung re-arm phiên mới (không
+  mang hội thoại cũ, mang lỗi gần nhất) với giới hạn `max_rearms`; hết lượt → `REARM_EXHAUSTED`.
+  Chi tiết cơ chế: [SDK & Gateway](/docs/developer-docs/sdk-gateway).
+- **PAUSE ở ranh giới wave** — dừng chủ động cũng phục hồi theo cùng nguyên tắc: resume từ
+  checkpoint, node đã xong không chạy lại.
+- **Bằng chứng bất biến** — bằng chứng đã lưu không được sinh lại; nếu thiếu thì trạng thái quay về
+  "chưa kiểm chứng" ([Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)).
+
+:::info Vận hành
+Thủ tục khôi phục sau sự cố thực tế: [Sao lưu & phục hồi](/docs/admin-operations/sao-luu-phuc-hoi).
+:::

@@ -1,47 +1,79 @@
 ---
-sidebar_position: 1
+title: ADLC Docs — Trang đích
+description: Hệ thống ADLC Multi-Agent hỗ trợ phát triển phần mềm — nền tảng, kiến trúc, sử dụng, vận hành, phát triển và tra cứu.
+sidebar_position: 0
+slug: /
 ---
 
-# Tutorial Intro
+# ADLC — Agentic Development Lifecycle
 
-Let's discover **Docusaurus in less than 5 minutes**.
+**ADLC** là hệ thống multi-agent hỗ trợ phát triển phần mềm theo nguyên tắc:
+**agent làm phần nặng, con người đứng ở 3 điểm duyệt** (① đặc tả — ② mã nguồn — ③ sản phẩm).
+Hệ thống gồm 4 tầng:
 
-## Getting Started
+| Tầng | Vai trò |
+|---|---|
+| **1 · Interface** | Nguồn công việc: IDE, Git, CI/CD, chatbot, Jira/ticketing |
+| **2 · Workflow** | Control plane: state machine vòng đời task, factory registry, các cổng duyệt |
+| **3 · Harness** | Agent core, công cụ & tri thức: task loop, memory, kiểm thử, vault |
+| **4 · Sandbox** | Môi trường thực thi cô lập: broker, VFS, provisioner, warm pool |
 
-Get started by **creating a new site**.
+:::note Lưu ý về bảo mật tài liệu
+Tài liệu này mô tả kiến trúc và cách vận hành ở mức thiết kế. **Không đưa vào docs**: token,
+mật khẩu, URL nội bộ thật, đường dẫn máy thật, hay nội dung chi tiết của factory repo
+(workflow/agent cụ thể) — đó là tài sản riêng của từng nhóm. Secret chỉ được nhắc qua **tên biến
+môi trường** hoặc **tên ref** trong vault.
+:::
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+## Bắt đầu từ đâu?
 
-### What you'll need
+**🧭 Tôi mới tìm hiểu ADLC** — đọc theo trình tự để hiểu hệ thống từ số 0:
 
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+1. [01 · Nền tảng ADLC](/docs/fundamentals/bai-toan) — bài toán, triết lý, vòng đời
+2. [02 · Kiến trúc 4 tầng](/docs/architecture/tong-quan-4-tang) — hệ thống gồm gì, nối vào nhau thế nào
+3. [Luồng End-to-End](/docs/architecture/luong-hoat-dong) — một ticket đi xuyên hệ thống
+4. [System Directory](/docs/architecture/system-directory) — bản đồ các hệ thống con
 
-## Generate a new site
+**⚡ Tôi muốn dùng ngay hệ thống** — vào thẳng phần cần thiết:
 
-Generate a new Docusaurus site using the **classic template**.
+| Cần làm | Vào ngay |
+|---|---|
+| Chạy workflow đầu tiên | [Hướng dẫn chạy lần đầu](/docs/user-guides/dung-he-thong-lan-dau) |
+| Giao việc cho agent bằng ngôn ngữ tự nhiên | [Agent Orchestrator](/docs/user-guides/opencode-orchestrator/gioi-thieu) |
+| Duyệt job / xem tiến độ | [Dashboard](/docs/user-guides/workloop-dieu-phoi/giao-dien-dashboard) |
+| Tra API / tool / DSL | [06 · Tra cứu](/docs/reference/api-rest) |
 
-The classic template will automatically be added to your project after you run the command:
+## Lộ trình đọc theo vai
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+| Bạn là… | Bắt đầu từ |
+|---|---|
+| Thành viên mới, cần hiểu bài toán và triết lý | [01 · Nền tảng ADLC](/docs/fundamentals/bai-toan) |
+| Người dùng hệ thống (chạy workflow, duyệt job) | [03 · Hướng dẫn sử dụng](/docs/user-guides/dung-he-thong-lan-dau) |
+| Quản trị hệ thống | [04 · Vận hành](/docs/admin-operations/moi-truong-trien-khai) |
+| Lập trình viên mở rộng hệ thống | [05 · Tài liệu lập trình viên](/docs/developer-docs/cau-truc-repo) |
+| Cần tra cứu API / tool / DSL / trạng thái | [06 · Tra cứu](/docs/reference/api-rest) |
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+## Quy ước của bộ docs
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+1. **Một chỗ duy nhất** — một khái niệm chỉ được viết chi tiết ở 1 mục; các mục khác link sang.
+2. **Số mục = số prefix** — sidebar tự sinh từ cấu trúc thư mục, không cần sửa `sidebars.ts`.
+3. Mỗi trang HDSD kết thúc bằng **"Kết quả đúng phải thấy"**.
+4. Mỗi trang kiến trúc mở bằng **1 sơ đồ** (tái dùng hình từ các slide trong `static/img/`).
 
-## Start your site
+## Ma trận sở hữu
 
-Run the development server:
+| Mảng | Người phụ trách | Trang HDSD |
+|---|---|---|
+| Điều phối (workloop · factory) | *đang cập nhật* | [workloop-dieu-phoi](/docs/user-guides/workloop-dieu-phoi/cai-dat) |
+| Harness / DSH | *đang cập nhật* | [harness-dsh](/docs/user-guides/harness-dsh/gioi-thieu) |
+| Agent Memory / Cognee | *đang cập nhật* | [agent-memory-cognee](/docs/user-guides/agent-memory-cognee/gioi-thieu) |
+| TestForge AI | Nguyễn Hữu Quân | [testforge](/docs/user-guides/testforge/gioi-thieu) |
+| Sandbox Kit | Nguyễn Trung Kiên | [sandbox-kit](/docs/user-guides/sandbox-kit/gioi-thieu) |
 
-```bash
-cd my-website
-npm run start
-```
+Các trang chung (01, 02, 04) do nhóm điều phối đứng mũi, nội dung góp ý theo PR từ từng mảng.
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
+## Ghi công
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+- Người hướng dẫn: **Trần Tuấn Anh**
+- Người thực hiện: **Ninh Minh Hiếu · Lê Trung Hiếu · Phạm Thị Hoài Thu · Kiều Minh Phước**
+- TestForge AI: **Nguyễn Hữu Quân** · Sandbox Kit: **Nguyễn Trung Kiên**

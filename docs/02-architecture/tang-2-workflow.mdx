@@ -1,0 +1,59 @@
+---
+title: Tầng 2 — Workflow (Control Plane)
+description: State machine vòng đời task, factory registry, cổng duyệt và cơ chế wave/gate.
+sidebar_position: 3
+---
+
+# Tầng 2 · Workflow — control plane
+
+> Sơ đồ gốc nằm trong slide ADLC — xuất hình vào `static/img/02-architecture/` khi có.
+
+Backend workloop (REST `:8100`) đóng vai control plane: đăng ký **factory cho từng sản phẩm** và
+theo dõi **state machine của từng work item**.
+
+## State machine vòng đời task
+
+```
+PENDING ──▶ IN PROGRESS ──▶ DONE
+                 │             │
+                 ▼             ▼
+             BLOCKED       CONCERNS
+```
+
+Trạng thái đầy đủ (kể cả trạng thái phụ TIMEOUT, REARM_EXHAUSTED, SKIPPED):
+[Trạng thái & State machine](/docs/reference/trang-thai).
+
+**Chốt chặn con người:** hệ thống tự nhận biết lúc nào cần bàn giao tiếp cho agent, lúc nào
+kích hoạt tạm dừng để gọi con người can thiệp tại **3 điểm chốt đỏ**: đặc tả — mã nguồn — sản phẩm.
+
+## Factory registry
+
+Workflow được **định nghĩa trong factory repo** (nguồn sự thật, quản lý bằng Git) và đồng bộ về
+backend qua lệnh sync — backend chỉ giữ bản **chỉ mục**, bản nguồn sự thật là repo:
+
+- `POST /api/v1/flows/sync` — nạp spec mới từ factory repo (trả SHA của lần sync).
+- `GET /api/v1/flows` — liệt kê workflow đã đăng ký.
+
+Xem chi tiết: [Data flow mã nguồn](/docs/architecture/luong-data/data-ma-nguon) và
+[Viết workflow spec](/docs/developer-docs/viet-workflow-spec).
+
+## Cổng duyệt (gates)
+
+| Cổng | Cơ chế trong workloop |
+|---|---|
+| ① Đặc tả | Cổng PR spec — đề xuất → duyệt → merge, cấm tự duyệt PR của mình |
+| ② Mã nguồn | Node review (agent) + hàng đợi duyệt HITL cho node `need_review: human` |
+| ③ Sản phẩm | Duyệt lifecycle (spec-docs, PR review) trước khi kết thúc vòng |
+
+Chi tiết cơ chế + link vận hành: [Giao tiếp & Contracts](/docs/architecture/giao-tiep) và
+tab **Duyệt** trong [Dashboard](/docs/user-guides/workloop-dieu-phoi/giao-dien-dashboard).
+
+## Wave & Gate
+
+- DAG chạy theo **wave** — các node không phụ thuộc chạy song song trong cùng wave.
+- Node mang cờ `gate` chỉ chấp nhận `DONE` — `DONE_WITH_CONCERNS` bị chặn, phải xử lý rồi mới qua.
+- `PAUSE` dừng run ở **ranh giới wave** và có thể resume từ checkpoint.
+
+:::info Hướng dẫn sử dụng
+Cách configure → run → quan sát → review: [HDSD Workloop điều phối](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc).
+:::

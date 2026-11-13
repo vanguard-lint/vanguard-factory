@@ -1,0 +1,70 @@
+---
+title: Viết workflow spec
+description: DSL spec.yaml kiểu Kestra — node types, brief, review, wave.
+sidebar_position: 2
+---
+
+# Viết workflow spec
+
+Cú pháp đầy đủ + tham chiếu trường: [Spec DSL](/docs/reference/spec-dsl). Trang này là **nguyên
+tắc viết**.
+
+## Tư duy cơ bản
+
+- Spec mô tả **DAG công việc**: các node có thể chạy song song (tổ chức thành **wave** theo bậc phụ
+  thuộc), kết nối bằng cạnh.
+- Mỗi node = một đơn vị giao việc cho agent theo **role** — brief là hợp đồng giao việc.
+- Mọi logic có nhánh/review đều **nêu rõ trong spec**, không giấu trong hội thoại.
+
+## Ví dụ mẫu (tên giả định)
+
+```yaml
+tasks:
+  - id: phan-tich
+    type: WorkloopTask
+    role: analyst
+    brief: |
+      Phân tích yêu cầu <ngữ cảnh tự đủ: đầu vào, đầu ra, ràng buộc>.
+      Kết quả ghi reports/phan-tich.md
+
+  - id: trien-khai
+    type: WorkloopTask
+    role: coder
+    need_review: agent        # node review chạy sau khi node này xong
+    brief: |
+      Dựa trên reports/phan-tich.md, cài đặt <tính năng>.
+      Định nghĩa xong: <tiêu chí "xong" đo được>
+
+  - id: review-code
+    type: ReviewNode
+    role: reviewer
+    # cạnh ngược trỏ về node "trien-khai" — review lặp lại tới đạt
+
+  - id: chot
+    type: WorkloopTask
+    role: releaser
+    gate: true                # chỉ nhận DONE — DONE_WITH_CONCERNS bị chặn
+```
+
+Cấu trúc có thể lồng: **Parallel / Sequential** cho nhóm việc; **Condition** cho rẽ nhánh.
+
+## Nguyên tắc viết brief
+
+1. **Brief phải tự đủ** — người chưa biết gì về dự án đọc brief vẫn hiểu: đầu vào ở đâu, đầu ra gì,
+   tiêu chí "xong" là gì. Xem: [Viết agent persona & brief](/docs/developer-docs/viet-agent-persona).
+2. **Kỳ vọng đo được** — "xong" phải kiểm chứng được
+   ([kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)).
+3. **Không secret trong brief** — chỉ tên ref.
+4. Đặt ngân sách hợp lý: `timeout_s`, `stall_s`, `max_rearms`.
+
+## Quy trình đưa spec vào chạy
+
+1. Viết/sửa spec trong factory repo (hoặc qua `configure_workflow`).
+2. Sync: `POST /api/v1/flows/sync` — backend cập nhật chỉ mục, trả SHA.
+3. Chạy thử `fresh=true` với workflow nhỏ trước khi đưa vào quy trình thật.
+
+## Liên kết
+
+- Node types & trạng thái: [Spec DSL](/docs/reference/spec-dsl) ·
+  [Trạng thái](/docs/reference/trang-thai)
+- Cổng duyệt spec (PR spec): [Tầng 2](/docs/architecture/tang-2-workflow)

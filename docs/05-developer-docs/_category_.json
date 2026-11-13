@@ -1,0 +1,9 @@
+{
+  "label": "05 · Tài liệu lập trình viên",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "Developer Documentation",
+    "description": "Cấu trúc repo, DSL workflow, persona agent, plugin, SDK, kiểm thử và đóng góp."
+  }
+}

@@ -1,0 +1,31 @@
+---
+title: Known Issues
+description: Các vấn đề đã biết, trạng thái xử lý và cách đi vòng.
+sidebar_position: 9
+---
+
+# Known Issues
+
+Danh sách vấn đề **đã biết** của hệ thống tại thời điểm hiện tại. Khác với
+[Runbook](/docs/admin-operations/runbook-su-co) (cách xử lý sự cố từng bước), trang này liệt kê
+trạng thái của từng vấn đề để biết trước những gì đang chờ sửa.
+
+| # | Vấn đề | Ảnh hưởng | Cách đi vòng | Trạng thái |
+|---|---|---|---|---|
+| KI-01 | **DSH xoay token sau mỗi lần restart** | Backend gặp 401 hàng loạt nếu không cập nhật `DSH_TOKEN` | Cập nhật token + restart backend ngay sau khi restart DSH | Chờ cơ chế token tự làm mới |
+| KI-02 | **Engine vendored crash nếu thiếu `LANGFLOW_DATABASE_URL`** | Backend không khởi động được khi chạy engine standalone | Luôn set biến env trong script chạy | Sẽ đóng gói vào config mặc định |
+| KI-03 | **Workflow 404 nếu chưa sync sau khi push spec** | Người mới hay gặp — spec có trong Git nhưng backend chưa biết | Gọi `POST /api/v1/flows/sync` sau khi đổi spec | Cân nhắc auto-sync qua webhook |
+| KI-04 | **Session nằm ngoài workspace nếu thiếu `WORKLOOP_DSH_WS`** | Task chạy nhầm vị trí | Kiểm tra env trước khi run | Đang xử lý |
+| KI-05 | **Luồng TestForge → Sandbox là hướng tích hợp đề xuất** | Chưa khẳng định chạy E2E trong triển khai thực tế | Đối chiếu bằng một lần chạy thật trước khi đưa vào quy trình chính thức | Chờ kiểm chứng E2E |
+| KI-06 | **Hình minh họa docs chưa xuất từ slide** | Trang kiến trúc dùng sơ đồ text tạm thời | Xem quy ước hình: `static/img/README.md` | Đang bổ sung |
+
+## Quy tắc ghi nhận
+
+- Mỗi issue có **mã** (KI-xx) để trích dẫn trong PR/ticket.
+- Khi sửa xong: chuyển trạng thái thành **Đã xử lý** kèm link commit/PR, giữ lại một thời gian rồi
+  dời xuống phần "Đã xử lý gần đây".
+- Không ghi secret/đường dẫn nội bộ vào bảng này.
+
+## Đã xử lý gần đây
+
+*(chưa có mục nào — cập nhật khi có)*

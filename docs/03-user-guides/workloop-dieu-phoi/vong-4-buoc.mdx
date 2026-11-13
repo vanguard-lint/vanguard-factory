@@ -1,0 +1,76 @@
+---
+title: Vòng 4 bước — configure · run · quan sát · review
+description: Chu trình làm việc hằng ngày với một workflow trên Workloop.
+sidebar_position: 2
+---
+
+# Vòng 4 bước: configure → run → quan sát → review
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Workloop — điều phối |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | 🟢 Published |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+Cả 4 bước làm được qua 2 đường: **MCP** (nói chuyện với agent orchestrator bằng ngôn ngữ tự nhiên)
+hoặc **REST API** (gọi trực tiếp). Bảng tool đầy đủ: [MCP Tools](/docs/reference/mcp-tools) ·
+[API REST](/docs/reference/api-rest).
+
+## 1 · Configure — định nghĩa workflow
+
+Workflow = spec (DAG các node) + agents (persona theo role). Viết spec trong factory repo rồi
+sync, hoặc configure qua MCP:
+
+```
+configure_workflow(
+  name: "<ten-workflow>",
+  spec: "<yaml Kestra-style — nodes, brief, review...>",
+  agents: { "<role>": "<persona-tom-tat>" }
+)
+```
+
+Cú pháp spec chi tiết: [Spec DSL](/docs/reference/spec-dsl) ·
+Nguyên tắc viết: [Viết workflow spec](/docs/developer-docs/viet-workflow-spec).
+
+## 2 · Run — khởi động run
+
+```
+run_workflow(name: "<ten-workflow>", fresh: true)
+```
+
+- `fresh=true` — bỏ trạng thái cũ, chạy lại từ đầu.
+- Hệ thống trả `job_id` — dùng job_id cho mọi bước sau.
+- DAG chạy theo **wave**; node có gate sẽ dừng chờ duyệt.
+
+## 3 · Quan sát — theo dõi tiến độ
+
+| Cần xem | Qua MCP | Qua REST/Dashboard |
+|---|---|---|
+| Trạng thái run | `get_run(job_id)` | tab **Runs** |
+| Kết quả từng node | `get_report(job_id)` | tab **Runs** → job |
+| Tiến độ thời gian thực | — | SSE `GET /api/v1/events/stream/{run_id}` · tab **Runs** |
+| Toàn bộ run | `list_runs` | tab **Runs** |
+
+Giải thích trạng thái: [Trạng thái](/docs/reference/trang-thai).
+
+## 4 · Review — duyệt HITL
+
+Khi node `need_review: human` tới lượt, run tạm dừng và **card duyệt** hiện ở tab **Duyệt**:
+
+- Đọc brief, diff và bằng chứng kèm theo.
+- Chấp nhận / từ chối **kèm lý do** — lý do được ghi vào log trung lập.
+- Sau khi duyệt, run tiếp tục wave kế tiếp.
+
+Chi tiết tab duyệt: [Giao diện dashboard](/docs/user-guides/workloop-dieu-phoi/giao-dien-dashboard).
+
+## Kết quả đúng phải thấy
+
+- `get_report(job_id)` cho thấy mọi node ở trạng thái terminal, node được duyệt có ghi nhận
+  người duyệt + lý do.
+- Trên Gitea có PR từ nhánh agent — **chưa được merge** cho tới khi người duyệt gộp.

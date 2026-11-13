@@ -1,0 +1,42 @@
+---
+title: SDLC vs ADLC
+description: So sánh quy trình phát triển phần mềm truyền thống và quy trình có AI Agent tham gia.
+sidebar_position: 2
+---
+
+# SDLC vs ADLC — gì giữ nguyên, gì thay đổi
+
+## Vòng đời không đổi — điểm nối mới là vấn đề
+
+SDLC truyền thống và ADLC có **cùng các giai đoạn**: yêu cầu → thiết kế → phát triển → kiểm thử →
+phát hành → vận hành. Điều thay đổi là **ai thực hiện giữa các giai đoạn**:
+
+| Khía cạnh | SDLC truyền thống | SDLC + AI (trước ADLC) | ADLC |
+|---|---|---|---|
+| Người thực hiện giữa chừng | Kỹ sư | **Cá nhân tự nối các giai đoạn bằng prompt** | Agent thực thi, hệ thống điều phối |
+| Giao việc | Task mô tả rõ, người nhận có ngữ cảnh | Prompt một lần, dễ thiếu tiêu chí | **Spec được duyệt + đóng băng** đúng phiên bản |
+| "Xong" | Test + review của người | Lời agent nói | **Kiểm chứng độc lập có bằng chứng** |
+| Ai quyết định | Người duyệt ở từng mốc | Người duyệt mọi thứ (mỏi) hoặc không ai | **Agent đề xuất — hệ thống và người duyệt ở 3 cổng đỏ** |
+| Gián đoạn | Người quay lại việc của mình | Làm lại từ đầu | **Phục hồi từ trạng thái đã lưu** |
+| Cải tiến | Retrospective định kỳ | Không có dữ liệu | **System Loop dựa trên telemetry** |
+
+## Số liệu minh họa sự dịch chuyển
+
+Khi có hệ thống điều phối, **nút thắt không biến mất — nó dịch chuyển ra hai đầu**:
+
+| Giai đoạn tính năng | Trước | Sau (xu hướng minh họa) |
+|---|---|---|
+| Mô tả yêu cầu | 10% | **40%** |
+| Viết & sửa code | 70% | **20%** (agent) |
+| Kiểm chứng | 20% | **40%** |
+
+> Tỉ lệ minh họa xu hướng, không phải số đo thực tế. Hệ thống xây đúng cho sự dịch chuyển đó:
+> **giữa được tự động hóa — hai đầu có hợp đồng & kiểm chứng độc lập.**
+
+Vai trò kỹ sư không mất đi mà dịch chuyển lên: **Spec · Architecture · Product Taste**.
+
+## Đọc tiếp
+
+- Bài toán gốc vì sao tự nối giai đoạn là điểm nghẽn: [Bài toán](/docs/fundamentals/bai-toan)
+- ADLC giải quyết thế nào: [Triết lý thiết kế](/docs/fundamentals/triet-ly)
+- Vòng đời cụ thể từng trạm: [Vòng đời công việc](/docs/fundamentals/vong-doi-7-tram)

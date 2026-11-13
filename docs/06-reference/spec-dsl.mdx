@@ -1,0 +1,52 @@
+---
+title: Spec DSL
+description: Cú pháp spec đầy đủ — node types, trường, cấu trúc lồng, wave/gate.
+sidebar_position: 3
+---
+
+# Spec DSL Reference
+
+Spec workflow viết YAML kiểu Kestra: khối `tasks:` lồng nhau tạo DAG; engine tổ chức chạy theo
+**wave** (các node độc lập cùng bậc chạy song song).
+
+## Node types
+
+| Type | Dùng khi |
+|---|---|
+| `WorkloopTask` | Task thực thi bởi agent theo `role` |
+| `ReviewNode` | Cổng review — cạnh ngược trỏ về node bị review, lặp tới đạt |
+| `Condition` | Rẽ nhánh theo biểu thức `condition` |
+| `Parallel` / `Sequential` | Gom nhóm flowable (lồng nhau được) |
+
+## Trường của WorkloopTask
+
+| Trường | Ý nghĩa |
+|---|---|
+| `id` | Định danh node (duy nhất trong workflow) |
+| `role` | Persona agent đảm nhiệm (`agents/<role>.md`) |
+| `brief` | Nội dung giao việc — inline, hoặc file `briefs/<node>.md` |
+| `need_review` | `none` \| `agent` \| `human` — cổng duyệt sau khi node xong |
+| `gate` | `true` → chỉ nhận `DONE`; `DONE_WITH_CONCERNS` bị chặn |
+| `model` | Model chạy node (nếu cần chỉ định) |
+| `timeout_s` / `stall_s` | Ngân sách thời gian / thời gian xem là stall |
+| `max_rearms` | Số lần re-arm tối đa ([SDK & Gateway](/docs/developer-docs/sdk-gateway)) |
+| `context` | Ngữ cảnh bổ sung cho node |
+| `join_policy` | `all` \| `all-active` — cách chờ các nhánh nhập lại |
+| `pass_full` | `none` \| `upstream` — truyền dữ liệu upstream cho node |
+| `system_prompt` / `skill_text` | Ghi đè prompt hệ thống / inject kỹ năng |
+
+## Ví dụ
+
+Xem ví dụ đầy đủ ở [Viết workflow spec](/docs/developer-docs/viet-workflow-spec#ví-dụ-mẫu-tên-giả-định).
+
+## Trạng thái node
+
+`PENDING → IN_PROGRESS → DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT`
+kèm `SKIPPED`, `TIMEOUT`, `REARM_EXHAUSTED` — chi tiết: [Trạng thái](/docs/reference/trang-thai).
+
+## Quy ước
+
+1. Spec mô tả **logic** — bố cục canvas (layout) lưu riêng, không trộn.
+2. Brief inline dài → chuyển sang `briefs/<node>.md`.
+3. Không secret trong spec — chỉ tên ref.
+4. Đổi spec qua **cổng PR spec** có duyệt — không sửa trực tiếp khi đang có run.

@@ -1,0 +1,52 @@
+---
+title: Ba vòng cải tiến
+description: Task loop, Product loop, System loop — trạng thái từng vòng trong hệ thống.
+sidebar_position: 1
+---
+
+# Cơ chế kiểm chứng — ba vòng cải tiến (2.8a)
+
+Để agent không hallucinate và không suy giảm chất lượng, hệ thống tổ chức **ba vòng lặp**:
+
+```mermaid
+flowchart TB
+    subgraph TASK["TASK LOOP — trạng thái: ĐÃ CHẠY"]
+        A1["Spec + quyền + ngân sách đóng băng"] --> A2["Phiên mới — không mang hội thoại cũ"]
+        A2 --> A3["Candidate — lưu"]
+        A3 --> A4{"Test bảo vệ (bên ngoài, độc lập)"}
+        A4 -- "FAIL — mang lỗi gần nhất sang lần sau" --> A2
+        A4 -- PASS --> A5["Người duyệt"]
+    end
+    subgraph PRODUCT["PRODUCT LOOP — nền tảng đã có: kế hoạch có phiên bản, có duyệt"]
+        B1["Backlog"] --> B2["Vòng ADLC"] --> B3["Nghiệm thu"] --> B1
+    end
+    subgraph SYSTEM["SYSTEM LOOP — đang phát triển: quy trình đánh giá riêng"]
+        C1["Telemetry nhiều lần chạy"] --> C2["Đánh giá theo benchmark"] --> C3["Cải tiến model · prompt · công cụ · chính sách"] --> C1
+    end
+```
+
+Harness phục vụ **Task Loop** · ADLC tổ chức **Product Loop** · quy trình đánh giá riêng tổ chức
+**System Loop**. Ta đi vào Task Loop trước — đó là nơi **niềm tin được tạo ra**.
+
+## Task loop — mỗi lần thử bắt đầu lại từ spec cố định
+
+```
+Spec + quyền + ngân sách ──▶ PHIÊN MỚI (không mang hội thoại cũ) ──▶ CANDIDATE (lưu)
+        đóng băng                                                  │
+                                                                   ▼
+   FAIL ── mang lỗi gần nhất sang lần sau ◀──── TEST BẢO VỆ (bên ngoài, độc lập)
+                                                    │
+                                                   PASS ──▶ người duyệt
+```
+
+Dừng khi: hết ngân sách · không tiến triển (stall → re-arm, giới hạn số lần) · thiếu thông tin
+(xin người dùng qua HITL). Chi tiết cơ chế re-arm:
+[SDK & Gateway](/docs/developer-docs/sdk-gateway).
+
+## Ba vòng trong hệ thống này
+
+| Vòng | Thể hiện ở đâu |
+|---|---|
+| Task loop | Phiên agent trên harness; state machine node; test bảo vệ; re-arm |
+| Product loop | Vòng đời ADLC — [các trạm và cổng duyệt](/docs/fundamentals/vong-doi-7-tram) |
+| System loop | Ma trận năng lực + benchmark — [Ma trận năng lực](/docs/reference/ma-tran-nang-luc) |

@@ -1,0 +1,98 @@
+---
+title: Đóng góp
+description: Quy trình PR, commit convention, quy tắc đóng góp docs.
+sidebar_position: 7
+---
+
+# Đóng góp
+
+## Quy trình PR
+
+1. **Nhánh riêng** từ `main` — đúng [Git contract](/docs/architecture/giao-tiep#contract-git):
+   1 thay đổi — 1 nhánh, không đẩy thẳng `main`, người duyệt merge.
+2. **Commit convention** — khuyến nghị kiểu Conventional Commits:
+   `feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`.
+3. **Bằng chứng kèm PR** — log/output chạy thử; không có bằng chứng thì chờ
+   [kiểm chứng](/docs/developer-docs/kiem-thu).
+4. **Không tự merge PR của mình** — ít nhất một người duyệt khác.
+5. PR đổi **factory repo** của tenant phải được chủ tenant duyệt — nội dung factory là tài sản
+   riêng ([Cấu trúc repo](/docs/developer-docs/cau-truc-repo)).
+
+## Checklist trước khi gửi
+
+- [ ] Test chạy PASS (kèm bằng chứng)
+- [ ] Không có secret/đường dẫn máy thật/token trong diff
+- [ ] Đã chạy lint/docs build sạch
+- [ ] Docs liên quan được cập nhật (theo quy tắc "một chỗ duy nhất")
+- [ ] Trang HDSD mới có mục "Kết quả đúng phải thấy"
+
+## Đóng góp docs
+
+- Sửa **đúng thư mục mảng mình**; trang chung (01, 02, 04) góp ý theo PR cho nhóm điều phối.
+- Một khái niệm viết chi tiết ở **một chỗ duy nhất**; chỗ khác link.
+- Link giữa các trang dùng đường dẫn tuyệt đối `/docs/...` — build sẽ bắt link hỏng.
+- Không đưa thông tin cần bảo mật vào docs: token, URL nội bộ thật, tên workflow/agent cụ thể của
+  tenant ([Lưu ý bảo mật](/docs/)).
+
+## Chuẩn viết tài liệu
+
+### Ba loại tài liệu — không trộn trong một bài
+
+| Loại | Trả lời câu hỏi | Nằm ở đâu trong docs này |
+|---|---|---|
+| **Concept** | Nó là gì? Tại sao cần? | 01 · Nền tảng |
+| **Architecture** | Nó hoạt động như thế nào? | 02 · Kiến trúc |
+| **User guide** | Tôi sử dụng nó như thế nào? | 03 · HDSD |
+
+Ví dụ: "Memory là gì" chỉ viết ở 01/02; trang HDSD Memory **không giảng lại lý thuyết** — chỉ
+hướng dẫn thao tác và link về.
+
+### Template chuẩn một trang HDSD
+
+Mỗi hệ thống con viết theo khung sau — **không bắt buộc đủ 8 phần**, chọn phần phù hợp với hệ
+thống (đề xuất tối thiểu: Overview, Getting Started, Troubleshooting):
+
+1. **Overview** — hệ thống là gì, vai trò trong ADLC, đối tượng sử dụng
+2. **Architecture** — thành phần, tích hợp (link sang 02, không lặp lại)
+3. **Getting Started** — điều kiện, truy cập, xác thực, chuẩn bị
+4. **User Guide** — hướng dẫn từng chức năng, quy trình thao tác
+5. **Integration** — API/MCP/webhook, cách kết nối hệ thống khác
+6. **Administration** — cấu hình, phân quyền, giám sát
+7. **Troubleshooting** — lỗi thường gặp, cách xử lý, khi nào chuyển đội kỹ thuật
+8. **Reference** — FAQ, link API, thuật ngữ
+
+### Cấu trúc một hướng dẫn thao tác
+
+Mỗi hướng dẫn cụ thể trong trang (hoặc trang riêng) theo cấu trúc:
+
+1. **Mục đích** — làm gì để làm gì?
+2. **Điều kiện trước** — cần chuẩn bị gì?
+3. **Các bước** — thao tác từng bước, có lệnh/ảnh.
+4. **Kết quả đúng phải thấy** — bắt buộc, chuẩn của toàn bộ docs này.
+5. **Lỗi thường gặp** — cái gì có thể hỏng, xử lý ra sao.
+6. **Tài liệu liên quan** — link có trách nhiệm.
+
+### Metadata đầu mỗi trang HDSD
+
+Bảng nhỏ ngay đầu trang (thay cho khối trích dẫn):
+
+```markdown
+:::note Thông tin trang
+| | |
+|---|---|
+| **Hệ thống** | Sandbox Kit — tạo phiên |
+| **Người phụ trách** | Nguyễn Trung Kiên |
+| **Trạng thái tài liệu** | Draft / Published |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | yyyy-mm-dd |
+:::
+```
+
+Cờ **trạng thái hệ thống** dùng bộ: ✅ Đã triển khai · 🚧 Đang phát triển · 🔬 Đã chạy thực nghiệm ·
+📐 Đề xuất (chưa kiểm chứng) — chú giải tại
+[System Directory](/docs/architecture/system-directory#chú-giải-trạng-thái).
+
+## Liên kết
+
+- Ma trận sở hữu: [Trang đích](/docs/#ma-trận-sở-hữu)
+- Quy ước sidebar: [Quy ước của bộ docs](/docs/#quy-ước-của-bộ-docs)

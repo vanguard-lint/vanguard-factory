@@ -1,0 +1,46 @@
+---
+title: Dùng hệ thống lần đầu
+description: Quickstart — bật đủ các phần, chạy ticket đầu tiên.
+sidebar_position: 1
+---
+
+# Dùng hệ thống lần đầu
+
+Mục tiêu: từ số 0 tới **run workflow đầu tiên** trên một máy. Đây là bản tóm tắt — hướng dẫn chi
+tiết từng bước nằm ở [HDSD Workloop điều phối](/docs/user-guides/workloop-dieu-phoi/cai-dat).
+
+## Điều kiện cần
+
+- Python 3.11 + git + `pip`.
+- **Harness (DSH)** đang chạy và có plugin taskloop (địa chỉ + token cấp qua biến môi trường
+  `DSH_TOKEN` — giá trị không bao giờ ghi vào repo/docs).
+- **Gitea nội bộ**: một factory repo (branch `main`) — nơi lưu spec + agents.
+
+## Sáu bước tóm tắt
+
+| # | Bước | Tóm tắt | Chi tiết |
+|---|---|---|---|
+| 1 | Cài repo workloop | `pip install -e .` | [Cài đặt](/docs/user-guides/workloop-dieu-phoi/cai-dat) |
+| 2 | Tạo script chạy backend | file `run_backend.sh` — sửa các giá trị env in hoa | [Cài đặt — bước 2](/docs/user-guides/workloop-dieu-phoi/cai-dat#bước-2-tạo-script-chạy-backend) |
+| 3 | Khởi động + kiểm sống | `curl :8100/api/health` | [Cài đặt — bước 3](/docs/user-guides/workloop-dieu-phoi/cai-dat#bước-3-khởi-động-và-kiểm-sống) |
+| 4 | Cắm MCP cho agent orchestrator | đăng ký server MCP `workloop-factory` | [HDSD Agent orchestrator](/docs/user-guides/opencode-orchestrator/gioi-thieu) |
+| 5 | Smoke test | workflow 1 node qua MCP | [Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc) |
+| 6 | Ghi nhớ cảnh báo token DSH | DSH đổi token sau restart | [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co) |
+
+## Kết quả đúng phải thấy
+
+```bash
+curl http://127.0.0.1:8100/api/health
+```
+
+Trả về `{"ok":true,...}` và sau khi sync:
+
+```json
+{"sha":"<sha-cua-lan-sync>","workflows":[{"name":"<ten-workflow>"}]}
+```
+
+## Sau bước này
+
+- Làm quen vòng điều phối: configure → run → quan sát → review
+  ([Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc)).
+- Xem tổng quan kiến trúc để hiểu luồng: [Tổng quan 4 tầng](/docs/architecture/tong-quan-4-tang).

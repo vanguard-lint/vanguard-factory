@@ -1,0 +1,29 @@
+---
+title: Phoenix (Observability)
+description: Traces, chi phí theo model — nền tảng cho log trung lập và System Loop.
+sidebar_position: 2
+---
+
+# Phoenix — observability
+
+## Vai trò trong hệ thống
+
+Phoenix thu nhận traces từ toàn hệ thống qua OTLP HTTP:
+
+- **Session = job_id** — nhóm mọi span của một run; tra cứu được toàn vòng đời một công việc.
+- **Span chuẩn** — `workloop.run` cho cả run, `workloop.node.<id>` cho từng node.
+- **Chi phí theo model** — token tiêu tốn từng bước, phục vụ tối ưu và so sánh.
+- **Log trung lập** — trạng thái do hệ thống ghi, là căn cứ cho
+  [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).
+
+## Cách bật & đọc
+
+- Bật tracing: `WORKLOOP_TRACING=1` + khai báo điểm đến qua biến `OTEL_EXPORTER_OTLP_*`
+  ([Env vars](/docs/reference/env-vars)).
+- Đọc số liệu: nhóm API `observability` của backend (`/summary`, `/daily`) hoặc dashboard Phoenix.
+
+## Vận hành
+
+Cảnh báo và chi phí: [Monitoring & cảnh báo](/docs/admin-operations/monitoring-canh-bao).
+Dữ liệu telemetry là đầu vào của System Loop:
+[Ba vòng cải tiến](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien).

@@ -1,0 +1,58 @@
+---
+title: TestForge AI — kiểm chứng độc lập
+description: Kiểm chứng độc lập với 3 agent — chức năng (Playwright), hiệu năng (k6), khuyến nghị — và promotion gate.
+sidebar_position: 3
+---
+
+# TestForge AI — kiểm chứng độc lập
+
+> Sơ đồ gốc nằm trong slide TestForge — xuất hình vào `static/img/02-architecture/` khi có.
+
+## Vai trò: quan sát viên bên ngoài
+
+TestForge hiện thực hóa nguyên tắc [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap):
+**agent làm việc nói "xong" chưa phải là xong** — phải có bằng chứng từ bên quan sát không nằm
+trong quyền sửa của agent thực thi. TestForge đồng hành xuyên suốt SDLC:
+
+| Giai đoạn | Hoạt động | Mức độ |
+|---|---|---|
+| 01 Phân tích yêu cầu | Tài liệu phân tích làm căn cứ kiểm thử | Hỗ trợ |
+| 02 Thiết kế | Tham chiếu đặc tả hệ thống | Tham chiếu |
+| 03 Phát triển | Chạy test sớm, phát hiện lỗi, gợi ý tối ưu | Hỗ trợ trực tiếp |
+| 04 Kiểm thử | Sinh, chạy test chức năng + đo tải k6 | **Trọng tâm** |
+| 05 Phát hành | Cung cấp kết quả kiểm tra trước release | Hỗ trợ |
+
+## Ba agent
+
+```
+Agent 1 · Functional   — Yêu cầu → kịch bản → bằng chứng thực thi (Playwright headless,
+                         trong Sandbox; khám phá UI thật để tạo locator/trace)
+Agent 2 · Performance  — Trace/OpenAPI → workload k6 → chạy tải → đánh giá ngưỡng
+                         (p50/p95/p99, tỷ lệ lỗi, throughput)
+Agent 3 · Recommendation — Kết quả Agent 2 → nguyên nhân khả dĩ + khuyến nghị + kế hoạch
+                         xác minh (LLM phân tích; Dev kiểm chứng trước khi kết luận)
+```
+
+Kết quả hiệu năng phân loại **PASS / PASS_WITH_WARNING / FAIL** theo target và biên chấp nhận;
+khuyến nghị tối ưu **không tự sửa mã nghiệp vụ** — luôn có bước xác minh tiếp theo.
+
+## Promotion gate — chấp nhận bài test vào bộ chuẩn
+
+Một luồng test chỉ vào được bộ test chuẩn (regression) khi qua gate kiểm tra, ví dụ:
+
+- `step_coverage` — độ bao phủ bước (tối thiểu theo cấu hình, ví dụ ≥ 80% grounded).
+- `oracle_from_contract` — bước ASSERT bám kỳ vọng đã duyệt.
+- `replay_pass` — chạy lại được với kết quả xác minh.
+- `video_evidence` — bằng chứng video không rỗng.
+
+Kết quả tổng thể: **PASS / HEALED_PASS / FAIL / ERROR / PARTIAL** — chỉ PASS/HEALED_PASS qua gate
+và được duyệt mới đưa vào regression.
+
+## Bằng chứng
+
+Mỗi lần chạy lưu theo mã job: **script, ảnh, trace, video, log, báo cáo k6** — nằm ngoài phiên
+sandbox để dùng cho hồi quy và đối chiếu.
+
+:::info Hướng dẫn sử dụng
+Đầu vào, quy trình 4 bước, thẩm định kết quả: [HDSD TestForge](/docs/user-guides/testforge/gioi-thieu).
+:::

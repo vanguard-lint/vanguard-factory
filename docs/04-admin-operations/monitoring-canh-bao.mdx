@@ -1,0 +1,62 @@
+---
+title: Monitoring & cảnh báo
+description: Health check, job metrics, ngưỡng cảnh báo khuyến nghị.
+sidebar_position: 2
+---
+
+# Monitoring & cảnh báo
+
+## Kiểm sống hàng ngày
+
+```bash
+curl http://127.0.0.1:8100/api/health   # {"ok":true,...}
+```
+
+## Nguồn số liệu
+
+| Nguồn | Nội dung | API |
+|---|---|---|
+| **Job metrics** | Ledger việc, tổng hợp run, usage | `GET /api/v1/metrics/ledger`, `/summary`, `/usage-real` |
+| **Observability** | Traces Phoenix, số liệu theo ngày | `GET /api/v1/observability/summary`, `/daily` |
+| **Timeline** | Gantt từng run | `GET /api/v1/monitor/jobs/{id}/timeline` |
+| **Events** | Sự kiện run theo thời gian thực | `GET /api/v1/events/stream/{run_id}` (SSE) |
+
+Chi tiết endpoint: [API REST](/docs/reference/api-rest) · nền tảng traces:
+[Phoenix](/docs/user-guides/cong-cu-ho-tro/phoenix-observability).
+
+## Ngưỡng cảnh báo khuyến nghị
+
+| Tín hiệu | Ngưỡng gợi ý | Nghĩa là gì |
+|---|---|---|
+| `401` từ harness | > 0 trong 5 phút | token DSH đổi sau restart → [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co) |
+| Node `REARM_EXHAUSTED` | bất kỳ | brief/ngân sách không đủ → xem report node |
+| Run kẹt `in_progress` | > timeout cấu hình | harness/broker chết → runbook |
+| Tỷ lệ BLOCKED | tăng so với baseline | spec thiếu thông tin → xem lại quy trình spec |
+| Chi phí token/job | vượt ngân sách | xem breakdown theo model trên Phoenix |
+| Sync factory lỗi | bất kỳ | Git/cred lỗi → runbook |
+
+## Phụ thuộc & sức khỏe — thành phần lỗi ảnh hưởng gì
+
+Khi một thành phần không hoạt động, cần biết ngay **hệ thống nào bị ảnh hưởng** trước khi chẩn
+đoán sâu:
+
+| Thành phần lỗi | Ảnh hưởng có thể xảy ra | Kiểm tra đầu tiên |
+|---|---|---|
+| **Workflow (workloop)** | Không tiếp nhận/điều phối được task; run mới không tạo | `curl :8100/api/health` |
+| **Harness (DSH)** | Agent không thực hiện được nhiệm vụ; run kẹt `in_progress` | health + token còn hạn không |
+| **Sandbox broker** | Không thực thi được mã nguồn; node treo ở bước chạy lệnh | health broker, tài nguyên |
+| **Agent Memory** | Agent thiếu ngữ cảnh / không truy xuất tri thức | health memory server |
+| **Gitea** | Không lấy/push được mã; sync factory lỗi; PR không tạo | `git ls-remote` |
+| **TestForge** | Không chạy được kiểm chứng — kết quả "chưa kiểm chứng" | health TestForge API |
+| **Phoenix** | Mất traces/chi phí — **không ảnh hưởng kết quả run** | endpoint OTLP |
+| **VFS** | Tệp không đồng bộ — candidate/bằng chứng không lưu được | disk + broker log |
+
+> Bảng này cần **đối chiếu với cấu hình triển khai thực tế** của từng môi trường trước khi dùng làm
+> runbook chính thức — cơ chế chính: [Runbook sự cố](/docs/admin-operations/runbook-su-co).
+
+## Trách nhiệm
+
+- **Người vận hành** — theo dõi dashboard, xử lý theo
+  [Runbook sự cố](/docs/admin-operations/runbook-su-co).
+- **Nhóm điều phối** — rà số liệu tuần, cập nhật ngưỡng; số liệu là đầu vào của
+  [System Loop](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien).

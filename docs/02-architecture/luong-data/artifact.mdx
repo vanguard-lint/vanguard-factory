@@ -1,0 +1,30 @@
+---
+title: Artifact Flow
+description: Spec, brief, candidate, bằng chứng test, report, PR — ai sinh ra, nằm ở đâu.
+sidebar_position: 3
+---
+
+# Artifact Flow — sản phẩm trôi qua đâu (2.6c)
+
+Artifact là **bằng chứng vật lý của sự kết nối giữa các tầng**: mỗi artifact sinh ra ở một tầng,
+trôi đến một nơi lưu cụ thể, và được một hợp đồng chi phối.
+
+| Artifact | Ai sinh ra | Nằm ở đâu | Chi phối bởi |
+|---|---|---|---|
+| **Spec** (`*.spec.yaml`) | Người viết workflow / đề xuất qua cổng PR spec | Factory repo (Git) | [Git contract](/docs/architecture/giao-tiep#contract-git) |
+| **Brief** (`briefs/<node>.md`) | Người viết workflow | Factory repo | Git contract |
+| **Persona agent** (`agents/<role>.md`) | Người viết agent | Factory repo | Git contract |
+| **Candidate** (bản code đề xuất) | Agent thực thi trong sandbox | VFS → nhánh agent trên Gitea | Git contract |
+| **Bằng chứng test** (kịch bản, ảnh, video, log, trace) | TestForge / test bảo vệ | Lưu theo mã job, ngoài phiên sandbox | [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap) |
+| **Report** (báo cáo run, kết quả node) | Backend workloop | DB chỉ mục +Phoenix (telemetry) | [TaskLoop contract](/docs/architecture/giao-tiep#contract-taskloop) |
+| **PR** | Hệ thống (từ nhánh agent) | Gitea | Git contract — người duyệt merge |
+| **Trace** | Backend + gateway | Phoenix | Telemetry flow |
+
+## Ba nguyên tắc
+
+1. **Artifact sống ngoài phiên** — phiên sandbox tắt đi được; candidate, bằng chứng, report phải
+   còn nguyên để hồi quy và đối chiếu (liên quan [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan)).
+2. **Mỗi artifact truy vết được nguồn** — report ghi SHA factory; bằng chứng ghi mã job; PR ghi
+   nhánh agent.
+3. **Bằng chứng mới kết luận** — thiếu bằng chứng → giữ trạng thái "chưa kiểm chứng", không
+   tự phong DONE.

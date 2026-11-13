@@ -1,0 +1,59 @@
+---
+title: SDK & Gateway
+description: ReArmControlLoop, DSH SDK, OpenCode SDK — lớp giao tiếp với môi trường thực thi.
+sidebar_position: 5
+---
+
+# SDK & Gateway
+
+## Kiến trúc gateway
+
+Gateway là lớp giữa **engine workflow** và **môi trường thực thi agent**. Cơ chế chịu lỗi dùng
+chung nằm ở lớp nền:
+
+```
+                  ┌────────────────────────────┐
+   Engine DAG ───▶│  ReArmControlLoop (base)   │  stall → re-arm phiên mới
+                  │  · token budget            │  không mang hội thoại cũ,
+                  │  · max_rearms              │  mang lỗi gần nhất sang
+                  └──────────┬─────────────────┘
+                             │ 4 hook do gateway cài
+              ┌──────────────┴──────────────┐
+              ▼                             ▼
+   ┌────────────────────┐        ┌────────────────────┐
+   │  DSH SDK           │        │  OpenCode SDK      │
+   │  session/workspace │        │  server + pair +   │
+   │  taskloop/vault    │        │  session_prompt    │
+   └────────────────────┘        └────────────────────┘
+```
+
+## ReArmControlLoop — vòng chịu lỗi chung
+
+- **Stall → re-arm:** phiên không tiến triển → mở phiên mới từ spec cố định, mang lỗi gần nhất
+  ([Task loop](/docs/architecture/kiem-chung-phuc-hoi/ba-vong-cai-tien)).
+- **Ngân sách:** giới hạn token/thời gian; hết ngân sách → dừng có kiểm soát.
+- **`max_rearms`:** giới hạn số lần thử; hết lượt → node `REARM_EXHAUSTED`.
+- Gateway cụ thể cài 4 hook (bắt đầu phiên, quan sát, kết thúc, thu bằng chứng).
+
+## DSH SDK
+
+Client đầy đủ cho harness (DSH): quản lý **session/workspace/project**, gọi **plugin taskloop**
+(create/get/list/update task), đọc vault qua ref, bắt sự kiện phiên. Dùng khi môi trường thực thi
+là harness DSH.
+
+## OpenCode SDK
+
+Client cho nền agent OpenCode: kết nối server, ghép cặp (pair), mở session, gửi prompt. Dùng bởi
+gateway OpenCode và bởi MCP `call_agent` khi orchestrator gọi agent cụ thể.
+
+## Khi nào chọn gateway nào
+
+| Tình huống | Gateway |
+|---|---|
+| Chạy trên hạ tầng harness nội bộ, cần taskloop/vault/HITL | DSH SDK |
+| Chạy với agent nền OpenCode | OpenCode SDK |
+
+## Liên kết
+
+- Nguyên tắc phục hồi gián đoạn: [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan)
+- Trạng thái node khi re-arm hết lượt: [Trạng thái](/docs/reference/trang-thai)

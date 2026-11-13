@@ -1,0 +1,9 @@
+{
+  "label": "Tầng 3 · Harness",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "Tầng 3 · Harness",
+    "description": "Agent core, công cụ & tri thức — core runtime, memory bridge và hệ sinh thái plugin."
+  }
+}

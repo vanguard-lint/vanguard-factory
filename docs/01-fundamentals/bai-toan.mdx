@@ -1,0 +1,32 @@
+---
+title: Bài toán — điểm nghẽn khi dùng AI trong SDLC
+description: Vì sao việc tự nối các giai đoạn SDLC bằng AI trở thành điểm nghẽn của quy trình.
+sidebar_position: 1
+---
+
+# Bài toán: các điểm nối quyết định khả năng tiếp tục công việc
+
+Khi một cá nhân dùng AI để phát triển phần mềm, vòng đời SDLC vẫn nguyên vẹn —
+yêu cầu → thiết kế → phát triển → kiểm thử → phát hành → vận hành — nhưng **người phải tự nối
+các giai đoạn lại với nhau**. Chính những điểm nối đó trở thành điểm nghẽn:
+
+| Điểm nối | Vấn đề quan sát được |
+|---|---|
+| Yêu cầu → Thiết kế | Thiếu tiêu chí rõ ràng khi prompt với agent |
+| Thiết kế → Phát triển | Bàn giao giữa các phần dễ **mất ngữ cảnh** và bản mã |
+| Kiểm thử → Phát hành | Báo cáo hoàn thành **chưa đủ bằng chứng** nghiệm thu |
+| Mọi giai đoạn | Agent có thể **hallucinate** và nói dối người dùng |
+| Khi có gián đoạn | Workflow bị ngắt cần **phục hồi đúng việc đã thực hiện** |
+
+Số liệu khảo sát Stack Overflow 2025:
+
+> 66% người trả lời gặp lời giải AI **"gần đúng nhưng chưa đúng"**.
+> Chỉ 17% người dùng AI agent đồng ý rằng agent cải thiện sự phối hợp trong team.
+
+## Hệ quả
+
+AI càng có khả năng hành động, nhu cầu **điều phối, kiểm chứng và quản trị** càng lớn.
+Giá trị không còn nằm ở từng dòng code, mà nằm ở **hệ thống vận hành** — khả năng liên tục
+chuyển hóa ý tưởng thành tính năng ổn định.
+
+ADLC sinh ra để trả lời đúng bài toán này: xem [Triết lý thiết kế](/docs/fundamentals/triet-ly).

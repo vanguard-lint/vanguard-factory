@@ -1,0 +1,9 @@
+{
+  "label": "04 · Vận hành",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "Administration & Operations",
+    "description": "Triển khai, monitoring, secret, phân quyền, sao lưu và runbook sự cố."
+  }
+}

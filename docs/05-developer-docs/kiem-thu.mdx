@@ -1,0 +1,41 @@
+---
+title: Kiểm thử
+description: Bộ test hệ thống — smoke test, test SDK, lint docs.
+sidebar_position: 6
+---
+
+# Kiểm thử
+
+## Bộ test của workloop
+
+| Bộ | Nội dung | Cách chạy |
+|---|---|---|
+| **Smoke test** | Workflow 1 node qua MCP — chuỗi configure → run → report | [Cài đặt — bước 5](/docs/user-guides/workloop-dieu-phoi/cai-dat#bước-5-smoke-test-workflow-1-node-qua-mcp) |
+| **Test SDK** | Kiểm tra SDK/gateway end-to-end (ví dụ bộ `test_sdk_full` — chuẩn tham chiếu ~34 ca PASS) | `pytest` trong repo |
+| **Test backend** | API flows/monitor/lifecycle | `pytest` |
+| **Test frontend** | Giao diện dashboard | theo cấu hình repo |
+
+> Số lượng ca test ghi ở đây là **chuẩn tham chiếu** tại thời điểm viết docs — số liệu sống theo
+> repo, đối chiếu kết quả chạy thật trước khi kết luận.
+
+## Kiểm thử cho đóng góp mới
+
+Mọi đóng góp (plugin, node type, API) đi kèm:
+
+1. **Bộ test riêng** của tính năng — chạy được độc lập.
+2. **Smoke test end-to-end** — workflow nhỏ chứng minh tính năng chạy trong luồng thật.
+3. **Bằng chứng chạy** kèm PR (log/output) — khớp nguyên tắc
+   [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).
+
+## Lint & kiểm tra docs
+
+- Docs site kiểm tra **link hỏng** ngay khi build (`onBrokenLinks: throw`) — sửa link trước khi PR.
+- Văn phong kiểm tra bằng công cụ lint docs (Vale) khi đã cấu hình.
+- Mọi trang HDSD phải có mục **"Kết quả đúng phải thấy"**.
+
+## Kết quả đúng phải thấy
+
+```bash
+pytest            # tất cả PASS
+npm run build     # docs build sạch, không link hỏng
+```

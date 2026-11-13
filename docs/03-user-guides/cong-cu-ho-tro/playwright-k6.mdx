@@ -1,0 +1,33 @@
+---
+title: Playwright & k6
+description: Test E2E chức năng (Playwright) + load test (k6) — bộ đôi thực thi kiểm chứng.
+sidebar_position: 4
+---
+
+# Playwright & k6 — thực thi kiểm chứng
+
+## Playwright — kiểm thử chức năng
+
+- Sinh test từ **giao diện thật**: quan sát UI, tạo locator/trace (hỗ trợ bởi
+  [Steel Browser](/docs/user-guides/cong-cu-ho-tro/steel-browser)), xác minh bằng thực thi.
+- Chạy **headless trong sandbox** — môi trường sạch, tái lập được.
+- Bằng chứng theo lần chạy: ảnh, video, trace, log — lưu ngoài phiên
+  ([Artifact Flow](/docs/architecture/luong-data/artifact)).
+
+## k6 — load test
+
+- Tạo workload từ **trace API thực tế** hoặc **OpenAPI**; profile tải: smoke / normal / peak / stress.
+- Thu chỉ số: **p50/p95/p99 latency, throughput, tỷ lệ lỗi, tổng request**.
+- Đánh giá theo **ngưỡng cấu hình** → kết luận PASS / PASS_WITH_WARNING / FAIL; có override phải
+  ghi người phê duyệt và lý do.
+
+## Kết nối với TestForge
+
+Hai công cụ này là "tay" thực thi của TestForge — Agent 1 (chức năng) dùng Playwright, Agent 2
+(hiệu năng) dùng k6, Agent 3 phân tích kết quả k6 để đề xuất xử lý:
+[TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+
+## Liên kết
+
+- Đánh giá ngưỡng và recommendation: [TestForge — HDSD](/docs/user-guides/testforge/gioi-thieu)
+- Kiểm chứng độc lập: [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)

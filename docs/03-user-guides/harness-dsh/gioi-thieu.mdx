@@ -1,0 +1,47 @@
+---
+title: Harness (DSH) — hướng dẫn sử dụng
+description: Cài đặt, tạo session, dùng plugin taskloop trên Harness.
+sidebar_position: 1
+---
+
+# Harness (DSH) — hướng dẫn sử dụng
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Harness / DSH |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | ⚪ Placeholder |
+| **Trạng thái hệ thống** | ✅ Đã triển khai |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+Harness là tầng 3 của hệ thống — agent core, công cụ & tri thức. Kiến trúc tổng quan:
+[Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness).
+
+## Khái niệm chính
+
+| Khái niệm | Ý nghĩa |
+|---|---|
+| **Session** | Phiên làm việc của agent — tạo/gắn theo workspace |
+| **Workspace** | Không gian tệp/tài nguyên của một đơn vị công việc |
+| **Plugin taskloop** | Hợp đồng vòng đời task giữa harness và workflow — [TaskLoop contract](/docs/architecture/giao-tiep#contract-taskloop) |
+| **Vault** | Secret trung tâm — agent chỉ nhận qua tên ref |
+| **HITL approval** | Cơ chế chờ/duyệt có người qua stream sự kiện |
+
+## Nội dung sẽ bổ sung
+
+- [ ] Cài đặt harness trên máy/server (yêu cầu hệ thống, bước khởi động)
+- [ ] Tạo session & workspace — lệnh + tham số
+- [ ] Bật/plugin taskloop — cấu hình hợp đồng task
+- [ ] Cấp secret qua vault cho một phiên
+- [ ] Quan sát sự kiện phiên (stream) và duyệt HITL
+- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+
+## Liên kết
+
+- Kiến trúc: [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness)
+- Trạng thái task: [Trạng thái](/docs/reference/trang-thai)
+- Xử cố liên quan token: [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co)

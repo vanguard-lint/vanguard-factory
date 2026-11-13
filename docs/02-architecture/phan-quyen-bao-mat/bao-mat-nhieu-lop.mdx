@@ -1,0 +1,39 @@
+---
+title: Bảo mật nhiều lớp
+description: Lọc lệnh, cách ly sandbox, audit và xác thực dashboard — mô hình bảo mật theo tầng.
+sidebar_position: 1
+---
+
+# Security & Permission Model — bảo mật nhiều lớp (2.7)
+
+> Sơ đồ gốc nằm trong slide Sandbox Kit — xuất hình vào `static/img/02-architecture/` khi có.
+
+Mỗi mối nối giữa các tầng có một lớp rào chắn riêng; nhiều lớp cộng lại thành mô hình:
+
+```
+LỚP 1 · LỌC LỆNH        LỚP 2 · CÁCH LY              LỚP 3 · AUDIT         LỚP 4 · TRUY CẬP
+Broker kiểm lệnh,       Sandbox chạy trên            Mọi lệnh, mọi thay    Dashboard/API
+đường dẫn, giới         nhân ảo (user space),        đổi, mọi gate đều     qua bearer token
+hạn tài nguyên          giới hạn quyền & phạm        để lại dấu vết        + phân quyền theo
+mỗi phiên               vi truy cập mỗi phiên        trung lập             tenant/vai trò
+```
+
+## Chi tiết từng lớp
+
+1. **Lọc lệnh ở broker** — yêu cầu thực thi qua broker phải qua kiểm tra chính sách: lệnh được phép,
+   đường dẫn được chạm, giới hạn thời gian/tài nguyên. Lệnh không qua chính sách không chạm được
+   sandbox.
+2. **Cách ly môi trường thực thi** — mỗi phiên sandbox cô lập riêng (nhân ảo user-space); agent
+   không chạm nhân máy chủ, không thấy dữ liệu của phiên khác.
+3. **Audit trung lập** — log của hệ thống (không phải lời agent) là căn cứ đối chiếu khi có tranh
+   chấp; xem [Data flow telemetry](/docs/architecture/luong-data/data-telemetry).
+4. **Xác thực API & dashboard** — mọi API backend bắt buộc bearer token; dashboard phân quyền theo
+   vai; webhook từ nguồn ngoài được xác thực riêng.
+
+## Nguyên tắc xuyên suốt
+
+- **Quyền tối thiểu mỗi phiên** — agent chỉ có quyền cần cho task hiện tại.
+- **Người duyệt là chốt cuối** — kể cả khi mọi lớp tự động đều PASS, merge vẫn thuộc người duyệt
+  ([Git contract](/docs/architecture/giao-tiep#contract-git)).
+- **Secret không đi qua tầng 1–4 dưới dạng giá trị** — chỉ qua vault/ref:
+  [Secret & quyền](/docs/architecture/phan-quyen-bao-mat/secret-va-quyen).

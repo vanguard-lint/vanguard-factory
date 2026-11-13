@@ -1,0 +1,44 @@
+---
+title: Agent Memory (Cognee) — hướng dẫn sử dụng
+description: Nạp tài liệu, truy vấn ngữ cảnh dự án qua MCP.
+sidebar_position: 1
+---
+
+# Agent Memory (Cognee) — hướng dẫn sử dụng
+
+:::note Thông tin trang
+
+| | |
+|---|---|
+| **Hệ thống** | Agent Memory / Cognee |
+| **Người phụ trách** | *đang cập nhật* |
+| **Trạng thái tài liệu** | ⚪ Placeholder |
+| **Trạng thái hệ thống** | 🚧 Đang phát triển |
+| **Cập nhật** | 2026-11-13 |
+
+:::
+
+Memory cung cấp ngữ cảnh dự án cho agent qua giao diện MCP với ba kho (relational / graph /
+vector). Kiến trúc: [Agent Memory](/docs/architecture/tang-3-harness/cognee-agent-memory).
+
+## Khái niệm chính
+
+| Khái niệm | Ý nghĩa |
+|---|---|
+| **Nạp tài liệu** | Đưa docs/quyết định/quy ước vào memory để agent truy vấn sau này |
+| **Kho graph** | Knowledge graph — quan hệ giữa khái niệm, module, tính năng |
+| **Kho vector** | Tìm kiếm ngữ nghĩa theo nghĩa |
+| **MCP access** | Agent truy vấn qua tool MCP của memory server |
+
+## Nội dung sẽ bổ sung
+
+- [ ] Cài đặt / kết nối memory server (MCP)
+- [ ] Quy trình nạp tài liệu — chuẩn bị nguồn, định kỳ nạp lại
+- [ ] Cú pháp truy vấn — ví dụ thực tế cho từng kho
+- [ ] Quy ước trích dẫn nguồn trong câu trả lời của agent
+- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+
+## Liên kết
+
+- Kiến trúc: [Agent Memory](/docs/architecture/tang-3-harness/cognee-agent-memory)
+- Vai trò trong luồng giao việc: [Luồng End-to-End](/docs/architecture/luong-hoat-dong)

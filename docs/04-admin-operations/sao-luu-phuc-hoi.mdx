@@ -1,0 +1,37 @@
+---
+title: Sao lưu & phục hồi
+description: Sao lưu SQLite, factory repo, VFS, Gitea; khôi phục sau sự cố.
+sidebar_position: 4
+---
+
+# Sao lưu & phục hồi
+
+## Cần sao lưu gì
+
+| Thành phần | Nội dung | Chu kỳ gợi ý |
+|---|---|---|
+| **`WORKLOOP_DB` (SQLite)** | Jobs, events, chỉ mục workflow | Hàng ngày (file copy khi backend dừng) |
+| **Factory repo** | Spec, briefs, agents — nguồn sự thật | Theo Git (đã có lịch sử); mirror định kỳ |
+| **VFS** | Tệp artifact, workspace | Hàng ngày / theo dung lượng thay đổi |
+| **Gitea** | Repo mã nguồn + PR | Mirror định kỳ |
+| **Phoenix** | Traces (tuỳ chọn — mất chỉ mất dữ liệu quan sát) | Theo chính sách lưu giữ |
+
+> Sao lưu **không chứa secret dưới dạng giá trị** — secret nằm ở vault/dịch vụ nguồn, riêng rẽ.
+
+## Khôi phục sau sự cố — thủ tục
+
+1. **Dừng** backend (không để hai tiến trình ghi chung một DB).
+2. **Khôi phục DB** từ bản sao lưu mới nhất.
+3. **Khôi phục factory checkout** — `git clone`/`git fetch` lại; nếu factory repo mất, khôi phục từ
+   mirror.
+4. **Khởi động lại backend** + kiểm sống `curl :8100/api/health`.
+5. **Sync lại** `POST /api/v1/flows/sync` — backend tái lập chỉ mục từ nguồn sự thật.
+6. **Đối chiếu run đang dang dở** theo nguyên tắc
+   [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan):
+   đọc trạng thái đã lưu, tiếp tục từ checkpoint — **không tạo lại kết quả**; run bị mất trạng thái
+   (không có checkpoint) mới chạy lại `fresh=true`.
+
+## Kết quả đúng phải thấy
+
+Sau khôi phục: health OK; `GET /api/v1/flows` liệt kê đúng danh sách workflow; run đang PAUSE có
+thể `resume_run` và tiếp tục mà không chạy lại node đã DONE.
