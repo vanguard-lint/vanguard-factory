@@ -73,7 +73,21 @@ Khi FAIL: dùng log + bằng chứng để xác minh **trước khi** chấp nh�
 | [11 · Tham chiếu](./tham-chieu) | Cấu trúc thư mục, artifact, biến, endpoint, bàn giao |
 
 :::note Phạm vi tài liệu
-Bộ hướng dẫn đối chiếu DOCX 1.0 (mốc `be6ef54`) và source trên server `10.0.10.195` (HEAD `8a0653a`). Module **impact** và các endpoint `gherkin`, `bugbash`, `cancel` chỉ có trong source mới hơn — đã được ghi rõ tại trang tương ứng.
+Bộ hướng dẫn đối chiếu DOCX 1.0 (mốc `be6ef54`) và source của bản triển khai tham chiếu (HEAD `8a0653a`). Module **impact** và các endpoint `gherkin`, `bugbash`, `cancel` chỉ có trong source mới hơn — đã được ghi rõ tại trang tương ứng.
+:::
+
+:::tip Quy ước địa chỉ trong tài liệu
+Tài liệu **không** ghi địa chỉ, cổng hay đường dẫn thật của máy chủ nội bộ. Mọi chỗ cần giá trị cụ thể đều dùng placeholder dạng `<ten>`:
+
+| Placeholder | Thay bằng |
+|---|---|
+| `<broker-host>` | Hostname/IP của Broker trong mạng triển khai |
+| `<sut-ui-host>` / `<ui-port>` | Địa chỉ và cổng giao diện của hệ thống được kiểm thử |
+| `<sut-api-host>` / `<api-port>` | Địa chỉ và cổng API của hệ thống được kiểm thử |
+| `<adapter-host>` / `<adapter-port>` | Địa chỉ và cổng Agent Memory Adapter |
+| `/srv/testforge-ai` | Thư mục cài đặt thực tế trên máy chủ |
+
+Giá trị thật lấy từ tài liệu bàn giao môi trường của đơn vị, không hard-code vào báo cáo hay tài liệu chia sẻ.
 :::
 
 ## Liên kết

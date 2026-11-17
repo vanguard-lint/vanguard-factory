@@ -37,7 +37,7 @@ Bố trí CPU/RAM/đĩa theo số browser, số VU, thời lượng tải và th
 ### 1. Môi trường Python
 
 ```powershell
-Set-Location 'D:\VTS\TestAgent\testforge-ai'
+Set-Location 'D:\testforge-ai'
 py -3.12 -m venv .venv
 $py = '.\.venv\Scripts\python.exe'
 & $py -m pip install --upgrade pip
@@ -85,12 +85,12 @@ Broker đọc phần lớn cấu hình **khi import module** — đổi biến m
 Cửa sổ 1:
 
 ```powershell
-Set-Location 'D:\VTS\TestAgent\testforge-ai'
+Set-Location 'D:\testforge-ai'
 $py = '.\.venv\Scripts\python.exe'
 $secret = Read-Host 'Token Broker cục bộ' -AsSecureString
 $env:TESTFORGE_BROKER_TOKEN = [System.Net.NetworkCredential]::new(
   '', $secret).Password
-$env:AGENT_MEMORY_API_URL = 'http://10.0.10.195:8002/v1'
+$env:AGENT_MEMORY_API_URL = 'http://<adapter-host>:<adapter-port>/v1'
 $env:TESTFORGE_JOB_TIMEOUT = '600'
 $env:TESTFORGE_EVIDENCE_BASE_URL = 'http://127.0.0.1:19099'
 & $py testforge_broker.py --host 127.0.0.1 --port 19099
@@ -119,7 +119,7 @@ Kết thúc bằng `Ctrl+C` sau khi các job đã hoàn tất.
 Dành cho máy đã có Python, Node/npm và k6 phù hợp. Dùng tài khoản dịch vụ có quyền ghi `artifacts` và đọc cấu hình.
 
 ```bash
-cd /opt/testforge-ai
+cd /srv/testforge-ai
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements.txt
@@ -135,7 +135,7 @@ Cài thư viện hệ điều hành của Chromium có thể cần quyền quả
 Khởi động:
 
 ```bash
-export AGENT_MEMORY_API_URL=http://10.0.10.195:8002/v1
+export AGENT_MEMORY_API_URL=http://<adapter-host>:<adapter-port>/v1
 export TESTFORGE_EVIDENCE_BASE_URL=http://127.0.0.1:19099
 read -rs -p 'Broker token: ' TESTFORGE_BROKER_TOKEN
 echo

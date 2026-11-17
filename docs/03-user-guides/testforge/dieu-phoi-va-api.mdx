@@ -20,8 +20,8 @@ sidebar_label: 7 · Điều phối & API
 ```powershell
 $functions = '["FUNC-GUIDE-PT-LIST"]'
 & $py scripts/orchestrate.py --functions $functions `
-  --base-url http://10.0.10.195:3011 `
-  --api-url http://10.0.10.195:17004 `
+  --base-url http://<sut-ui-host>:<ui-port> `
+  --api-url http://<sut-api-host>:<api-port> `
   --email '<tai-khoan-test>' --actor qa `
   --password-env TNQD_ADMIN_PASSWORD `
   --source library --video --heal
@@ -69,8 +69,8 @@ sequenceDiagram
 ```powershell
 $payload = @{
   input_json = 'artifacts/inputs/FUNC-GUIDE-PT-LIST.json'
-  base_url   = 'http://10.0.10.195:3011'
-  api_url    = 'http://10.0.10.195:17004'
+  base_url   = 'http://<sut-ui-host>:<ui-port>'
+  api_url    = 'http://<sut-api-host>:<api-port>'
   email      = '<tai-khoan-test>'
   password_env = 'TNQD_ADMIN_PASSWORD'
   video      = $true

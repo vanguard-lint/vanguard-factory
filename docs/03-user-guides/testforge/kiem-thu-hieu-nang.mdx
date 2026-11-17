@@ -31,7 +31,7 @@ Generator hiện có template/handoff và kiểm tra tĩnh — **không** phải
 ```powershell
 & $py scripts/orchestrate_perf.py `
   --sessions artifacts/automation/exploration/EXPLORE-<id> `
-  --api-url http://10.0.10.195:17004 `
+  --api-url http://<sut-api-host>:<api-port> `
   --users-json opt/perf/users.json --profile smoke `
   --no-llm
 ```

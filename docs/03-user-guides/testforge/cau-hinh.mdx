@@ -20,7 +20,7 @@ Broker đọc phần lớn biến môi trường **lúc import module**. Sửa b
 | `TESTFORGE_PYTHON` | Interpreter cho subprocess. Mặc định `sys.executable`; phải có đủ dependencies |
 | `TESTFORGE_JOB_TIMEOUT` | Mặc định 600 giây. `job_timeout_seconds` trong request được kiểm trong khoảng 30–1200 |
 | `TESTFORGE_ALLOWED_ORIGINS` | Danh sách Origin cách nhau dấu phẩy. Middleware chỉ kiểm khi request có `Origin`; **không** phải phân quyền người dùng hay firewall |
-| `AGENT_MEMORY_API_URL` | Base URL Adapter, có hậu tố `/v1`. Mặc định `http://127.0.0.1:8000/v1`; ví dụ máy chủ `:8002/v1` |
+| `AGENT_MEMORY_API_URL` | Base URL Adapter, có hậu tố `/v1`. Mặc định `http://127.0.0.1:8000/v1`; khi tách riêng Adapter, trỏ tới `http://<adapter-host>:<adapter-port>/v1` |
 | `AGENT_MEMORY_API_KEY` | Bearer token gọi Adapter nếu được bật. **Khác** token Broker |
 | `TESTFORGE_EVIDENCE_BASE_URL` | Base URL dựng link ảnh/video/HTML trong báo cáo; phải là địa chỉ client thực sự truy cập được |
 | `LOG_LEVEL`, `LOG_JSON` | Mặc định `INFO`, JSON `true` |
@@ -76,9 +76,9 @@ Docker Compose đọc file này qua `env_file`. Python chạy trực tiếp **kh
 
 ```bash
 TESTFORGE_BROKER_TOKEN=REPLACE_WITH_BROKER_TOKEN
-AGENT_MEMORY_API_URL=http://10.0.10.195:8002/v1
+AGENT_MEMORY_API_URL=http://<adapter-host>:<adapter-port>/v1
 AGENT_MEMORY_API_KEY=REPLACE_WITH_ADAPTER_TOKEN
-TESTFORGE_EVIDENCE_BASE_URL=http://10.0.10.195:9099
+TESTFORGE_EVIDENCE_BASE_URL=http://<broker-host>:9099
 TESTFORGE_JOB_TIMEOUT=600
 TESTFORGE_SOURCE_REVISION=REPLACE_WITH_BUILD_REVISION
 TNQD_ADMIN_PASSWORD=REPLACE_WITH_TEST_PASSWORD
@@ -86,7 +86,13 @@ LOG_LEVEL=INFO
 LOG_JSON=true
 ```
 
-Giới hạn quyền đọc file trên máy chủ. Khi sửa `env_file` của container phải **tạo lại container**:
+Giới hạn quyền đọc file trên máy chủ.
+
+:::note Placeholder trong mẫu
+`<adapter-host>`, `<broker-host>` là **chỗ cần điền**, không phải giá trị chạy được. Thay bằng địa chỉ thật từ tài liệu bàn giao môi trường; không commit file chứa giá trị thật lên Git.
+:::
+
+Khi sửa `env_file` của container phải **tạo lại container**:
 
 ```bash
 docker compose up -d broker

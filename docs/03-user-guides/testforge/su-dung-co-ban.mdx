@@ -65,8 +65,8 @@ Với thao tác thêm mới, `expected_result` cần chỉ rõ **dấu hiệu th
 $py = '.\.venv\Scripts\python.exe'
 & $py scripts/run_explorer.py `
   --input-json artifacts/inputs/FUNC-GUIDE-PT-LIST.json `
-  --base-url http://10.0.10.195:3011 `
-  --api-url http://10.0.10.195:17004 `
+  --base-url http://<sut-ui-host>:<ui-port> `
+  --api-url http://<sut-api-host>:<api-port> `
   --email '<tai-khoan-test>' --actor qa `
   --password-env TNQD_ADMIN_PASSWORD `
   --video --headed --slowmo 300
@@ -111,7 +111,7 @@ Lấy mã `EXPLORE` từ kết quả vừa chạy — không dùng session gần
 ```powershell
 & $py scripts/replay_spec.py `
   --session artifacts/automation/exploration/EXPLORE-<id> `
-  --api-url http://10.0.10.195:17004 `
+  --api-url http://<sut-api-host>:<api-port> `
   --email '<tai-khoan-test>' `
   --password-env TNQD_ADMIN_PASSWORD --heal
 ```
