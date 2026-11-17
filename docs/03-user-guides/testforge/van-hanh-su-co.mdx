@@ -1,0 +1,113 @@
+---
+title: Vận hành, bảo trì và xử lý sự cố
+description: Theo dõi job, sao lưu artifact, retention và bảng tra sự cố thường gặp.
+sidebar_position: 11
+sidebar_label: 10 · Vận hành & sự cố
+---
+
+# Vận hành, bảo trì và xử lý sự cố
+
+## Theo dõi và truy vết
+
+Broker ghi log JSON với thời gian, level, event và các trường `request_id`, `job_id`, `result_type`. Middleware gán `X-Request-ID` nếu client chưa gửi.
+
+```bash
+docker compose logs --tail 100 broker
+docker compose exec broker python -c "import shutil; print(shutil.which('k6'))"
+```
+
+```powershell
+(Invoke-WebRequest "$broker/api/v1/metrics").Content
+```
+
+| Tín hiệu | Hành động |
+|---|---|
+| `jobs_active` tăng kéo dài | Xem job đang chạy, thời gian chờ, log. Một worker làm job còn lại phải xếp hàng |
+| `jobs_failed_total` / timeout tăng | Phân loại lỗi SUT, runtime, hết giờ **trước khi** tăng timeout |
+| Dung lượng `artifacts` | Theo dõi tốc độ tăng ảnh/video/trace; cảnh báo trước khi hết đĩa |
+| `memory.reachable=false` | Kiểm Adapter, `/v1/health`, kết nối **từ chính Broker** |
+| 401/403 tăng | Kiểm token/Origin/quyền; không ghi secret vào log phân tích |
+| Evidence link không mở | Kiểm base URL, đường dẫn tương đối, quyền đọc sau reverse proxy |
+
+:::note[Metrics không phải dashboard chất lượng]
+`metrics` chỉ phản ánh tiến trình và dictionary job đang chạy. Nó **không** thay thế dashboard coverage hay chất lượng testcase.
+:::
+
+Endpoint `health` và `metrics` hiện **không** gắn Bearer. Nếu mở ra mạng rộng, kiểm soát tại proxy/firewall.
+
+### Bảo trì
+
+Ngừng nhận yêu cầu từ client/proxy → chờ job hoàn tất → cập nhật.
+
+:::warning[Không có cancel bền vững]
+Broker hiện không có API cancel bền vững. Tránh kill tiến trình đang sửa dữ liệu thử nếu chưa xem tác động cleanup.
+:::
+
+## Sao lưu
+
+| Nhóm | Giữ lại | Thời điểm |
+|---|---|---|
+| Bản mã và image | Commit/patch, tag/digest, Dockerfile, dependency manifest | Mỗi release |
+| Cấu hình | Compose, env/secret qua kho phân quyền, role, URL, profile | Trước thay đổi |
+| Thư viện | `artifacts/inputs`, `artifacts/library`, profile/suite đã duyệt | Sau khi duyệt testcase, trước cập nhật |
+| Kết quả | EXPLORE, synthesis, STAGING, PRUN, REC, ORCH, log cần điều tra | Sau run quan trọng / theo retention |
+| Dữ liệu SUT | Dữ liệu thử + cách nhận diện/cleanup | Theo quy trình SUT |
+
+Tách cấu hình có bí mật khỏi gói báo cáo. `storage.state.json`, user pool, header và response có thể chứa dữ liệu nhạy cảm.
+
+:::tip[Evidence API]
+Hỗ trợ token trong header hoặc query để mở media. **Ưu tiên header**; tránh đưa URL có token vào tài liệu.
+:::
+
+### Khôi phục thử
+
+1. Tạo môi trường/cổng khác; nạp đúng image + cấu hình đã sao lưu.
+2. Khôi phục thư viện và artifact cần dùng; kiểm quyền file, đường dẫn host/container.
+3. Chạy health, một recall và một testcase **đọc**. Không kỳ vọng danh sách JOB cũ tự xuất hiện.
+4. So sánh ID/hash tài liệu, input, script; ghi kết quả kiểm chứng rồi mới cho client dùng.
+
+### Retention
+
+`scripts/retention.py` xóa staging run cũ, giữ tối đa **5 PASS** và **5 FAIL/ERROR** theo cách phân loại của script. **Không có dry-run.**
+
+Trước khi chạy dọn: đọc mã/chính sách, sao lưu run cần điều tra, kiểm tra không còn job đang ghi vào thư mục.
+
+`run_staging` có `--keep-runs`; báo cáo orchestration cũng có bước prune.
+
+## Xử lý sự cố — cài đặt, kết nối, xác thực
+
+| Hiện tượng | Kiểm tra | Cách xử lý |
+|---|---|---|
+| Thiếu Python module | Interpreter trong `health` có đúng venv? | Cài bằng đúng `python -m pip`; chạy `pip check` |
+| Không tìm thấy Chromium | Package có nhưng browser cache chưa cài / sai tài khoản | `python -m playwright install chromium` và `npx playwright install chromium` theo đúng runtime |
+| `npx` không thấy test | Node package, config, `testDir`, discovery output | `npm ci`; đọc stderr discovery; dùng spec đúng session |
+| Cổng đang dùng | `Get-NetTCPConnection -LocalPort 19099` hoặc `docker compose ps` | Xác định tiến trình, đổi cổng; **không** dừng tiến trình lạ |
+| 401 từ Broker | Token client và Broker cùng giá trị? Env có trước khi start? | Cấp lại token qua secret; khởi động lại đúng tiến trình |
+| 403 do Origin | Origin có trong allowlist? | Điều chỉnh theo client được duyệt; phân biệt với quyền SUT |
+| Memory unreachable | `/v1/health`, IP/DNS, mạng từ container | Sửa `AGENT_MEMORY_API_URL`; kiểm Adapter/Cognee |
+| 502 khi recall | Dataset/token Adapter, lỗi search upstream | Đọc `detail` đã lọc secret; phân biệt sai dataset với dịch vụ lỗi |
+| 413 hoặc 422 | Kích thước body, trường model, schema 5 trường | Dùng `input_json` cho file lớn; bỏ field ngoài hợp đồng; không gửi cả inline và path |
+
+Khi gửi sự cố, kèm: mốc thời gian, phiên bản, `request_id`/`job_id`, API đã gọi, log liên quan **đã che dữ liệu**. Không gửi toàn bộ file env, storage state hoặc dữ liệu tài khoản.
+
+## Xử lý sự cố — kiểm thử
+
+| Hiện tượng | Diễn giải | Bước tiếp theo |
+|---|---|---|
+| UI login không thành công | Sai mật khẩu/locator, SSO chưa hỗ trợ, thiếu identity header | Kiểm form thật và account test; không suy mật khẩu từ tên người dùng |
+| `DEVIATED` / `PARTIAL` | Bước chưa grounding đủ, thiếu assertion, nhãn UI lệch tài liệu | Đối chiếu trace/ảnh và PTYC; bổ sung input/locator; **không đổi oracle để né lỗi** |
+| Replay PASS nhưng không promote | Gate còn blocker step/oracle/cleanup/provenance | Mở `synthesis/promotion.json`, xử lý từng blocker, chạy lại |
+| k6 không tìm thấy | `PATH` của Broker khác terminal | Kiểm `health` và `shutil.which` trong đúng runtime/container |
+| Perf latency thấp, lỗi cao | Request thất bại nhanh do auth/route/dữ liệu | Kiểm status/body và request đơn trước khi tăng tải |
+| Không tạo REC | Result không FAIL, đang `--no-recommend`, hoặc script lỗi trước kết quả | Kiểm `overall_status` và PRUN; chạy `run_recommend` chỉ rõ ID |
+| 404 result sau restart | Dictionary job mất khi restart | Tra log/artifact; dùng đúng Broker; không gửi lại tác vụ ghi khi chưa rõ kết quả cũ |
+| Evidence 403/404 | Path vượt `artifacts`, file không tồn tại, sai môi trường | Dùng path tương đối đúng run; kiểm mount và evidence base URL |
+| Job timeout | Chờ browser, LLM hoặc batch quá dài | Xem log trước; chia batch hoặc sửa bước chờ. Trần hiện 1200 giây |
+
+:::danger[Mốc "xử lý xong"]
+Phải có **lượt chạy lại** hoặc phép kiểm chứng tương ứng. Giữ báo cáo lịch sử; lưu run mới với định danh mới. **Không sửa dữ liệu kết quả cũ** để phản ánh hành vi đã sửa.
+:::
+
+## Liên kết
+
+- [Cài đặt](./cai-dat) · [Triển khai Docker](./trien-khai-docker) · [ADR](/docs/reference/adr) · [Known issues](/docs/reference/known-issues)

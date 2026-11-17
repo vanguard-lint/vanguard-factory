@@ -1,0 +1,102 @@
+---
+title: Kết nối Cognee và đối chiếu tài liệu
+description: Truy xuất ngữ cảnh qua Agent Memory Adapter, kiểm tra đúng tài liệu trước khi compose.
+sidebar_position: 6
+sidebar_label: 5 · Cognee
+---
+
+# Kết nối Cognee và đối chiếu tài liệu
+
+TestForge gọi **Agent Memory API** do Cognee Adapter cung cấp:
+
+| Endpoint | Việc |
+|---|---|
+| `GET /v1/health` | Kiểm tra Adapter sống |
+| `GET /v1/datasets` | Liệt kê dataset |
+| `POST /v1/search` | Truy xuất ngữ cảnh |
+
+Broker phân giải **tên dataset → UUID** rồi gọi search. Response `fetch-testcase` trả `chunks`, `entities`, `related_chunks`.
+
+:::warning[`fetch-testcase` không chạy test]
+Endpoint này chỉ truy xuất ngữ cảnh. Nó **chưa** tạo hoặc chạy testcase.
+:::
+
+## Kiểm tra đường kết nối
+
+Dùng Broker đã khởi động. Nhập token riêng ở cửa sổ client; không in file môi trường ra màn hình.
+
+```powershell
+$broker = 'http://127.0.0.1:19099'
+$secret = Read-Host 'Token Broker' -AsSecureString
+$token = [System.Net.NetworkCredential]::new('', $secret).Password
+$headers = @{ Authorization = "Bearer $token" }
+$body = @{
+  dataset = 'testforge-demo'
+  query   = 'Xem danh sách hồ sơ'
+  top_k   = 5
+} | ConvertTo-Json
+$recall = Invoke-RestMethod -Method Post `
+  -Uri "$broker/api/v1/fetch-testcase" -Headers $headers `
+  -ContentType 'application/json; charset=utf-8' `
+  -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
+$recall.chunks | Select-Object document_id, source, text
+```
+
+- Tên dataset trên chỉ là **ví dụ**; phải xác nhận dataset thực tế của đơn vị trước khi chạy.
+- Token Broker **không mặc nhiên** có quyền gọi Adapter. Cần token Adapter riêng.
+
+## Triển khai Adapter riêng
+
+```bash
+export COGNEE_URL=<cognee-base-url>
+export COGNEE_EMAIL=<tai-khoan-cognee>
+export COGNEE_PASSWORD=<mat-khau-cognee>
+export ADAPTER_TOKEN=<adapter-token>
+python cognee_adapter.py --host 127.0.0.1 --port 8000
+```
+
+Dùng cổng trùng với giá trị mặc định của `AGENT_MEMORY_API_URL` (`http://127.0.0.1:8000/v1`) để giảm cấu hình sai.
+
+Adapter xử lý đăng nhập Cognee và chuẩn hóa `CHUNKS`. Việc cài đặt/nạp tài liệu cho **Cognee lõi** nằm ngoài gói Docker Broker — làm theo bản Cognee thực tế của đơn vị.
+
+## Đối chiếu tài liệu trước khi compose
+
+Lấy đúng **tên chức năng** chưa đủ để kết luận ngữ cảnh đầy đủ. Đối chiếu tài liệu PTYC và TKCT đã phê duyệt theo phiên bản, mã mục và phạm vi vai trò.
+
+| Tiêu chí | Cách kiểm tra | Kết quả cần ghi |
+|---|---|---|
+| Nguồn và phiên bản | `document_id`/`source` có dẫn tới đúng tài liệu, bản phát hành, mục? | File, phiên bản, mục nguồn; thiếu metadata phải ghi rõ |
+| Đúng nghiệp vụ | Chunk nói về đúng màn hình danh sách, không nhầm với màn hình tạo mới hay báo cáo? | Đúng/sai chức năng; ví dụ đoạn bị nhầm |
+| Vai trò và điều kiện | Có đủ quyền, trạng thái dữ liệu và điều kiện trước? | Quyền/tiền điều kiện còn thiếu |
+| Thao tác | Đủ bước mở màn hình, nhập, lưu, xác nhận? | Bước tìm thấy / chưa có |
+| Kết quả và validation | Có dấu hiệu lưu thành công, dữ liệu hiển thị lại, trường bắt buộc, trường hợp từ chối? | Oracle/validation chuyển được thành assertion |
+| Tính đầy đủ | Có bị cắt ngang ở bảng, thiếu trang, lẫn mục kế cận? | Phần cần truy vấn bổ sung hoặc duyệt tay |
+
+:::danger[Không ghi PASS khi chỉ có kết quả tìm kiếm tương tự]
+Trùng từ khóa không phải trùng nghiệp vụ. Bảng trên là **biên bản đối chiếu** cho từng chức năng.
+:::
+
+## Compose
+
+Sau khi ngữ cảnh phù hợp, compose và lưu file 5 trường:
+
+```powershell
+& $py scripts/compose_testcase.py `
+  --dataset testforge-demo `
+  --query 'Xem danh sách hồ sơ' `
+  --function-id FUNC-DEMO-LIST --top-k 5 `
+  --broker-url http://127.0.0.1:19099 --save --judge
+```
+
+Composer có schema validation, retry và kiểm tra grounding theo từ vựng. `--judge` thêm **một lần** thẩm định bằng LLM.
+
+| Cảnh báo | Chi tiết |
+|---|---|
+| Ghi đè | Kết quả lưu tại `artifacts/inputs/<function_id>.json`; cùng `function_id` sẽ **ghi đè** — sao lưu bản đã duyệt |
+| `--quiet --save` | Kiểm tra file đã được tạo |
+| `--quiet --submit` | **Không dùng đồng thời**; nhánh quiet kết thúc trước nhánh submit |
+| Giá trị của judge | Hỗ trợ phát hiện sai lệch, **không** chứng minh toàn bộ ý nghĩa nghiệp vụ đã khớp tài liệu |
+
+## Liên kết
+
+- [Sử dụng cơ bản](./su-dung-co-ban) · [Cấu hình](./cau-hinh) · [Cognee Agent Memory](/docs/architecture/tang-3-harness/cognee-agent-memory)

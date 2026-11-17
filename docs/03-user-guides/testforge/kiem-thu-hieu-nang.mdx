@@ -1,0 +1,144 @@
+---
+title: Kiểm thử hiệu năng và khuyến nghị
+description: Chuẩn bị workload k6, đọc p50/p95/p99, error rate, throughput và quy trình dùng recommendation.
+sidebar_position: 9
+sidebar_label: 8 · Hiệu năng
+---
+
+# Kiểm thử hiệu năng và khuyến nghị
+
+## Nguyên tắc trước khi tăng tải
+
+:::danger[Một request đơn phải đúng trước]
+Chỉ tăng tải sau khi **một request đơn** đã được xác minh đúng endpoint, method, dữ liệu, query và xác thực. Trace 2xx chỉ là **gợi ý** flow; nó không bảo đảm toàn bộ ngữ cảnh request đã được mang sang script k6.
+:::
+
+Generator hiện có template/handoff và kiểm tra tĩnh — **không** phải công cụ tự suy ra mọi luồng nghiệp vụ API.
+
+## Profile mặc định
+
+| Profile | VU | Giữ tải | Tăng / giảm |
+|---|---|---|---|
+| `smoke` | 2 | 30 giây | 5 / 5 giây |
+| `normal` | 5 | 1 phút | 10 / 5 giây |
+| `peak` | 10 | 1 phút | 10 / 5 giây |
+| `stress` | 15 | 2 phút | 15 / 10 giây |
+
+Đây là mặc định của `WORKLOAD_PROFILES` trong `workload.py` — **không** phải giới hạn của k6 và **không** phải SLA của hệ thống được kiểm thử. Requirement có thể định nghĩa profile riêng. Ramp time **cộng thêm** vào thời gian giữ tải.
+
+## Suy workload từ session
+
+```powershell
+& $py scripts/orchestrate_perf.py `
+  --sessions artifacts/automation/exploration/EXPLORE-<id> `
+  --api-url http://<sut-api-host>:<api-port> `
+  --users-json opt/perf/users.json --profile smoke `
+  --no-llm
+```
+
+- Mặc định chỉ nhận API `GET`/`HEAD` có response 2xx và bỏ tài nguyên tĩnh.
+- `--include-write` cho phép flow ghi — chỉ bật khi có dữ liệu riêng, quota và cleanup.
+- Không dùng `peak`/`stress` trước khi đội vận hành thống nhất phạm vi và tài nguyên.
+
+Kiểm tra **hợp đồng HTTP của script sinh ra**, nhất là `GET` so với `POST`, header identity/token và dữ liệu tham chiếu.
+
+## Requirement hiệu năng
+
+```json
+{
+  "perf_req_id": "PERF-GUIDE-LOGIN",
+  "scenario_name": "Login smoke",
+  "business_action": "login",
+  "test_target": {
+    "type": "API",
+    "endpoint": "POST /api/v1/auth/login",
+    "environment": "staging"
+  },
+  "workload_profiles": {
+    "smoke": {
+      "vus": 2,
+      "duration": "30s",
+      "ramp_up": "5s",
+      "ramp_down": "5s"
+    }
+  },
+  "thresholds": {
+    "p95_ms_max": 800,
+    "error_rate_max": 0.01
+  }
+}
+```
+
+`business_action` không có template cần handoff phù hợp. `users.json` phải theo đúng trường script sử dụng và **giữ ngoài hệ thống chia sẻ báo cáo**.
+
+## Chạy
+
+```powershell
+& $py scripts/run_perf.py `
+  --requirement opt/perf/perf_guide_login.json --profile smoke `
+  --base-url '<API-root-SUT>' --users-json opt/perf/users.json `
+  --staging-dir artifacts/automation/staging/STAGING-<id>
+```
+
+`--staging-dir` lấy **functional gate** từ kết quả STAGING chỉ định hoặc gần nhất.
+
+:::warning[Gate chức năng có thể bị bỏ qua]
+Khi không tìm thấy summary, mã hiện cho phép chạy ở **chế độ phát triển**. Nếu yêu cầu bắt buộc chặn hiệu năng sau functional FAIL, phải chọn đúng `--staging-dir` — đừng xem hành vi mặc định là chính sách cưỡng chế.
+:::
+
+## Đọc kết quả
+
+Đọc `performance_result.json` trong `PRUN/`:
+
+| Trường | Ý nghĩa |
+|---|---|
+| `p50_ms`, `p95_ms`, `p99_ms` | Thời gian phản hồi ở phân vị |
+| `throughput_rps` | Request/giây trong khoảng quan sát |
+| `error_rate` | Tỷ lệ **0–1**; `0.01` = 1% |
+| `violated_thresholds` | Ngưỡng bị vi phạm |
+| `overall_status` | `PASS` / `PASS_WITH_WARNING` / `FAIL` |
+
+**Luôn xem `violated_thresholds` và `overall_status`**, không chỉ exit code k6.
+
+:::note[Cách tính percentile]
+Percentile tính từ mẫu NDJSON theo **nearest-rank**. Không lấy trung bình p95 của nhiều run để tạo "p95 toàn hệ thống".
+:::
+
+### Override
+
+`--approved-by` và `--justification` lưu **người duyệt và lý do**. Override là **dấu vết quyết định**, không biến lỗi nghiệp vụ thành đã khắc phục.
+
+## Recommendation (Agent 3)
+
+```powershell
+& $py scripts/run_recommend.py --perf-run PRUN-<id>
+# Chỉ heuristic, không gọi LLM:
+& $py scripts/run_recommend.py --perf-run PRUN-<id> --no-llm
+```
+
+Đọc `issue_summary`, `evidence`, `likely_causes`, `action`, `validation_plan`. So sánh REC với metrics và threshold của **đúng PRUN**.
+
+| Bước | Bằng chứng cần giữ |
+|---|---|
+| Xác nhận vấn đề | PRUN, endpoint, profile, threshold, metric vi phạm |
+| Kiểm chứng giả thuyết | HTTP status, response đã che dữ liệu, log/cấu hình liên quan |
+| Thực hiện thay đổi | Mã phiên bản, người thực hiện, phạm vi, lý do |
+| Chạy lại cùng điều kiện | Cùng workload/dữ liệu/môi trường hoặc ghi rõ khác biệt |
+| Kết luận | So sánh trước/sau: chức năng, error rate, latency, throughput |
+
+:::danger[REC không phải kết luận nguyên nhân gốc]
+Mã Agent 3 **không** tự sửa ứng dụng. Kết quả tốt ở một endpoint không đại diện toàn bộ hệ thống — phải ghi rõ phạm vi và điều kiện đo.
+:::
+
+## Bẫy thường gặp
+
+| Hiện tượng | Diễn giải |
+|---|---|
+| Latency rất thấp nhưng error rate cao | Request thất bại nhanh do auth/route/dữ liệu — **không** phải hệ thống nhanh |
+| p95 đẹp, p99 xấu | Đuôi chậm ảnh hưởng một nhóm người dùng |
+| Throughput thấp, latency thấp | Có thể đang bị giới hạn bởi client/ramp, không phải SUT |
+| k6 không thấy | `PATH` của Broker khác `PATH` terminal |
+
+## Liên kết
+
+- [Hồi quy và impact](./hoi-quy-impact) · [Điều phối & API](./dieu-phoi-va-api) · [Playwright & k6](/docs/user-guides/cong-cu-ho-tro/playwright-k6)
