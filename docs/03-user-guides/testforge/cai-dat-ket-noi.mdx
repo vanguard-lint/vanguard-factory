@@ -1,13 +1,19 @@
 ---
-title: Cài đặt và kết nối TestForge
+title: Kết nối TestForge với Harness
 description: Cài vai_testforge vào profile DSH, cấu hình broker/credential và kiểm tra từ chính runtime.
-sidebar_position: 2
+sidebar_position: 13
+sidebar_label: Harness · Kết nối plugin
 ---
 
-# Cài đặt và kết nối TestForge
+# Kết nối TestForge với Harness
 
 Mục tiêu: agent trên Harness thấy đúng tool và gọi được TestForge broker. **Plugin là client**;
 Playwright, k6, tài khoản SUT và kho báo cáo thuộc môi trường broker/runner riêng.
+
+Trang này hướng dẫn phía **Harness/plugin**. Bộ hướng dẫn cài Python/Node, Broker, Docker,
+Cognee Adapter và vận hành TestForge đang được bổ sung trong
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5). PR đó chưa được merge khi
+đối chiếu; cần xác nhận bản broker thực tế trước khi dùng các API mới của nó.
 
 ## 1 · Kiểm tra điều kiện trước
 
@@ -57,6 +63,14 @@ Trong **DSH → Settings → Secrets**, đặt các tên sau theo thông tin adm
 Plugin đọc cấu hình mỗi lần gọi. Với các tên chuẩn trên, nguồn cấu hình ưu tiên vault rồi
 environment, cấu hình plugin và URL mặc định. Để tránh khác biệt giữa môi trường, chọn một
 nguồn chính và xóa giá trị cũ không còn dùng theo quy trình quản trị.
+
+Đây là hành vi phía **plugin**, không phải hot reload của broker. Theo bản broker được mô tả
+trong PR #5, phần lớn env được đọc khi khởi động/import module. Đổi env của broker cần nạp lại
+tiến trình; đổi `env_file` của Docker cần tạo lại container theo hướng dẫn triển khai.
+
+Đường lấy testcase qua TestForge broker có thể dùng **Cognee Adapter HTTP `/v1`** với
+`AGENT_MEMORY_API_URL` và `AGENT_MEMORY_API_KEY` trên broker. Nó khác kết nối MCP của plugin
+Agent Memory trong Harness; token broker, token Adapter và credential Cognee không dùng thay nhau.
 
 Mật khẩu đăng nhập **SUT** được cấu hình trên broker theo tên `password_env` mà runner sử dụng,
 hoặc qua profile staging tương ứng. Token broker không phải mật khẩu SUT; plugin được cài cũng
@@ -111,6 +125,11 @@ Mã nguồn revision tham chiếu đăng ký 10 tool:
 
 Không dùng `testforge_recommend` như một tool mặc định của revision này; luồng command perf có
 thể gọi Agent 3 qua broker. Một số tài liệu cũ ghi 7/8 tool nên cần đối chiếu inventory thực tế.
+
+API có trên broker không mặc nhiên có tool tương ứng. Bộ 10 tool này chưa có tool
+`impact/analyze` hoặc cancel riêng; wrapper `testforge_staging` tham chiếu cũng chưa chuyển
+tiếp các trường impact. Xem [phạm vi tích hợp Workloop](/docs/user-guides/testforge/tich-hop-workloop)
+trước khi dùng ví dụ API/CLI của một bản broker mới hơn.
 
 ## Sau khi kết nối
 

@@ -1,10 +1,11 @@
 ---
-title: Xử lý sự cố TestForge
+title: Xử lý sự cố tích hợp Workloop và TestForge
 description: Phân biệt lỗi gateway, plugin, broker, runner, SUT và testcase; đối soát job sau timeout.
-sidebar_position: 5
+sidebar_position: 16
+sidebar_label: Workloop · Sự cố tích hợp
 ---
 
-# Xử lý sự cố TestForge
+# Xử lý sự cố tích hợp Workloop và TestForge
 
 Trước khi xử lý, lưu **Workloop job ID, node ID, DSH session ID và TestForge job ID** nếu đã có.
 Xác định lỗi ở lớp nào để không chạy lại toàn bộ workflow một cách không cần thiết.
@@ -18,6 +19,7 @@ Xác định lỗi ở lớp nào để không chạy lại toàn bộ workflow 
 | `fetch failed` / connect timeout | DNS, VPN/routing, port broker từ Harness | So sánh host người dùng, container Harness và host broker; giữ nguyên cấu hình VPN |
 | Health đạt nhưng tạo job trả 401/403 | Credential và quyền của API được bảo vệ | Đối chiếu `TESTFORGE_BROKER_TOKEN`, nguồn vault/env; không lấy token DSH thay thế |
 | HTTP 404 | URL gốc và API của phiên bản broker | URL cấu hình không có `/api/v1` lặp; đối chiếu plugin với broker |
+| `result/{job_id}` trả 404 sau restart | Broker có giữ chỉ mục job trong RAM như bản mô tả trong PR #5 không? | Đối soát log/artifact và report Workloop; không coi là quyền tạo lại tác vụ ghi |
 | HTTP 422 | Schema và trường bắt buộc | Đọc lỗi validation; kiểm tra `profile`, `suite`, `requirement` là đường dẫn đúng |
 | Job lỗi file not found | File tồn tại trên **broker host** không? | Materialize file theo quy trình của môi trường; đường dẫn local không tự được upload |
 | Không đăng nhập được SUT | URL API, email, `password_env` và cơ chế auth | Xác nhận runner hỗ trợ đúng cách đăng nhập; không tự dùng Dev login thay thế |
@@ -46,6 +48,11 @@ không suy ra rằng chỉ có một job tồn tại từ một lần bấm trê
 Timeout khi chờ kết quả, đóng tab hoặc STOP Workloop không chứng minh tiến trình kiểm thử trên
 broker đã dừng. Bộ 10 tool tham chiếu không có tool cancel riêng. Đọc lại job và nhờ admin dùng
 cơ chế dừng phù hợp của backend nếu cần; chỉ ghi "đã hủy" khi có xác nhận từ backend.
+
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5) mô tả endpoint
+`POST /api/v1/cancel/{job_id}` ở broker mới hơn. Đây không phải tool sẵn có trong plugin đang
+tham chiếu, cũng không phải cơ chế cancel bền vững qua restart. Xác nhận phiên bản/quyền và
+kết quả dừng từ backend; không dùng PAUSE/STOP Workloop hoặc hết thời gian chờ làm bằng chứng.
 
 ## Kết quả đúng phải thấy
 

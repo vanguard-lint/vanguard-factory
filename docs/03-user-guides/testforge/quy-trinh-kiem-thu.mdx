@@ -1,14 +1,20 @@
 ---
-title: Quy trình kiểm thử và đọc bằng chứng
+title: Kiểm thử qua plugin Harness
 description: Giao lệnh TestForge, xem kế hoạch, xác nhận phạm vi, theo dõi job và đánh giá kết quả.
-sidebar_position: 3
+sidebar_position: 14
+sidebar_label: Harness · Kiểm thử
 ---
 
-# Quy trình kiểm thử và đọc bằng chứng
+# Kiểm thử qua plugin Harness
 
 Điều kiện: [kết nối broker](/docs/user-guides/testforge/cai-dat-ket-noi) đã kiểm tra. Các tên
 chức năng, tài khoản và URL `example.invalid` dưới đây là dữ liệu minh họa; thay bằng môi
 trường staging được cấp trước khi chạy. Ví dụ chưa phải biên bản nghiệm thu E2E.
+
+Các JSON bên dưới là **đối số tool `vai_testforge`**, không phải payload dùng nguyên xi cho
+REST hoặc cờ CLI. Bộ hướng dẫn sản phẩm trong
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5) mô tả đường API/CLI riêng;
+đối chiếu schema của đúng lớp trước khi chuyển một ví dụ sang lớp khác.
 
 ## 1 · Chuẩn bị đầu vào
 
@@ -95,6 +101,10 @@ artifact, dùng **`testforge_evidence`** với đường dẫn tương đối d�
 
 Không đoán tên artifact hoặc dùng đường dẫn từ job khác. Chia sẻ evidence qua quyền truy cập
 được cấp; kiểm tra link/report không chứa token trước khi đưa vào tài liệu, ticket hoặc ảnh.
+
+Với broker mô tả trong PR #5, danh mục job nằm trong RAM của một tiến trình. Sau restart,
+`result/{job_id}` có thể trả 404 dù log/artifact vẫn còn trên volume. Giữ các ID, đường dẫn
+artifact và report tại Workloop; không gửi lại tác vụ ghi chỉ vì không tra được job cũ.
 
 **Kết quả đúng:** report và artifact khớp cùng job, target, chức năng và thời điểm chạy. Nếu
 thiếu bằng chứng bắt buộc, ghi rõ phần chưa xác minh dù phần tóm tắt có chữ PASS.

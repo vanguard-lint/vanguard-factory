@@ -1,7 +1,8 @@
 ---
 title: Tích hợp TestForge vào Workloop
 description: Workflow hồi quy mẫu với gateway DSH, cổng duyệt phạm vi và review bằng chứng kiểm thử.
-sidebar_position: 4
+sidebar_position: 15
+sidebar_label: Workloop · Hồi quy
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
@@ -66,6 +67,28 @@ chạy đúng revision; nếu deployment chưa trả digest/attestation, ghi rõ
 công, chưa phải Verify receipt có ràng buộc mật mã.
 
 ## 2 · Thêm spec và persona theo quy trình PR
+
+### Phạm vi với các API mới của broker
+
+Bộ hướng dẫn sản phẩm trong [PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5)
+mô tả broker mới hơn plugin đang được tham chiếu ở đây. Cần phân biệt:
+
+| Năng lực | Broker trong PR #5 | Plugin 10 tool đang tham chiếu | Workflow mẫu này |
+|---|---|---|---|
+| Hồi quy suite/profile cố định | `POST /api/v1/staging` | `testforge_staging` chuyển profile/suite và tham số cơ bản | Có trong mẫu, cần nghiệm thu |
+| Phân tích ảnh hưởng | `POST /api/v1/impact/analyze` | Chưa có tool phân tích impact | Chưa tự chọn test theo thay đổi |
+| Chạy theo impact plan | Staging nhận `impact_config`, `impact_plan`, `target_revision`, `impact_approved_by` | Wrapper tham chiếu chưa chuyển tiếp các trường này | Dùng toàn bộ suite đã duyệt; chưa có ràng buộc impact |
+| Hủy job | `POST /api/v1/cancel/{job_id}` ở bản hỗ trợ | Chưa có tool cancel riêng | STOP Workloop không chứng minh job broker đã dừng |
+
+Không thêm các trường impact vào lời gọi tool rồi suy ra broker đã nhận chúng. Muốn dùng
+luồng impact phải có adapter/plugin tương thích, review kế hoạch và để runner xác minh lại
+đầu vào. Giá trị build phải lấy từ metadata triển khai SUT, không tự nhập để khớp plan.
+
+Các trạng thái `READY`, `REVIEW_REQUIRED`, `BLOCKED` của impact là kết quả chọn phạm vi, không
+phải PASS/FAIL testcase. `READY` vẫn cần duyệt; mapping thiếu hoặc chưa xác minh không phải
+căn cứ tự bỏ test. Mẫu hiện tại không tuyên bố đã tích hợp các khả năng này.
+
+### Tệp mẫu cho luồng suite cố định
 
 Tải các tệp mẫu rồi đặt vào factory:
 
@@ -164,6 +187,10 @@ vì task trước chưa đạt. Không đổi thủ công node sang DONE để b
 Mẫu không tạo một tab TestForge mới trên dashboard. Report node là điểm nối giữa Workloop và
 kết quả broker; artifact vẫn ở kho của dịch vụ theo chính sách lưu trữ. Nếu muốn tự hiển thị
 từng testcase thành một panel, cần phát triển adapter/UI riêng và nghiệm thu sau.
+
+Broker trong PR #5 giữ chỉ mục job trong RAM; restart có thể làm mất khả năng tra
+`result/{job_id}`. Workloop cần lưu report, ID và tham chiếu artifact độc lập với bộ nhớ broker.
+Ledger trong mẫu không khôi phục dictionary job trên broker và không thay kho job bền vững.
 
 ## 5 · Kết quả đúng phải thấy
 

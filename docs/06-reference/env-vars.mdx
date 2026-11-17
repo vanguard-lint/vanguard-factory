@@ -49,10 +49,16 @@ deployment thực sự đọc chúng. Xem [Kết nối Harness](/docs/user-guide
 | `TESTFORGE_BROKER_URL` | Vault DSH hoặc môi trường runtime plugin | URL gốc broker, không kèm `/api/v1` |
 | `TESTFORGE_BROKER_TOKEN` | Vault DSH hoặc môi trường runtime plugin | Token API broker, khác token DSH/Workloop |
 | `TESTFORGE_TOKEN` | Môi trường runtime plugin | Alias tương thích; ưu tiên tên chuẩn ở trên |
+| `AGENT_MEMORY_API_URL` | Broker TestForge có Cognee Adapter | Base URL HTTP `/v1` của Adapter; khác MCP URL của plugin Agent Memory |
+| `AGENT_MEMORY_API_KEY` | Broker TestForge có Cognee Adapter | Credential gọi Adapter; khác token broker |
 | Tên biến do `password_env` chỉ định | Môi trường broker/runner | Mật khẩu tài khoản SUT; chỉ truyền tên ref vào tool |
 
 Profile staging có thể có cấu hình credential riêng theo runner. Cài plugin không đồng bộ
 secret giữa Workloop, DSH và broker. Xem [Kết nối TestForge](/docs/user-guides/testforge/cai-dat-ket-noi).
+
+Plugin tham chiếu phân giải kết nối theo mỗi lời gọi; broker mô tả trong
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5) đọc phần lớn env lúc khởi động.
+Không suy ra thay đổi env broker có hiệu lực chỉ vì đã cập nhật secret phía Harness.
 
 ## Observability (Phoenix)
 
