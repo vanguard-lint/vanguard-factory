@@ -1,0 +1,58 @@
+id: testforge-regression
+description: Hoi quy TestForge tren staging, duyet pham vi va bang chung.
+
+tasks:
+  - id: prepare_test
+    type: WorkloopTask
+    role: testforge-qa
+    need_review: human
+    gate: true
+    timeout_s: 180
+    stall_s: 120
+    max_rearms: 0
+    brief: |
+      Doc qa/testforge-plan.json trong workspace rieng cua luot nghiem thu.
+      Can request_key, target/build revision, profile_path, suite_path,
+      suite/profile digest do QA/admin xac nhan, du lieu va timeout da duyet.
+      Chi goi testforge_health; chua tao job kiem thu.
+      Ghi reports/prepare_test.md: pham vi, dau vao, tac dong du lieu,
+      expected checks va thong tin con thieu. Thieu dau vao: NEEDS_CONTEXT.
+      Du dau vao: DONE de nguoi dung doc va duyet truoc task tiep theo.
+
+  - id: run_testforge
+    type: WorkloopTask
+    role: testforge-qa
+    gate: true
+    timeout_s: 1500
+    stall_s: 1200
+    max_rearms: 0
+    brief: |
+      Dung dung plan da duyet o prepare_test, khong doi suite/profile/target.
+      Doi soat reports/testforge-job.json theo request_key truoc khi tao job.
+      Neu da co job_id: chi goi testforge_result cho job cu.
+      Neu co intent chua ro ket qua: BLOCKED, yeu cau doi soat broker.
+      Neu chua co intent: ghi intent vao reports/testforge-job.json truoc khi
+      goi testforge_staging voi profile_path, suite_path, timeout da duyet,
+      wait_for_completion=false. Luu job_id ngay khi nhan duoc.
+      Poll bang testforge_result. Khong tu gui lai POST khi timeout.
+      Doc ket qua tung case va evidence; khong tu heal hoac sua expectation.
+      Ghi reports/run_testforge.md: request_key, cac ID da biet, target/revision,
+      suite/profile, job status, exit code, PASS/FAIL/SKIP, evidence va concerns.
+      Chi DONE khi du cac check bat buoc va bang chung deu dat.
+      FAIL/ERROR/PARTIAL, thieu evidence hoac chua doi soat: BLOCKED va ghi ly do.
+
+  - id: review_result
+    type: WorkloopTask
+    role: testforge-reviewer
+    need_review: human
+    gate: true
+    timeout_s: 300
+    stall_s: 180
+    max_rearms: 0
+    brief: |
+      Doc plan da duyet, reports/prepare_test.md, reports/run_testforge.md
+      va reports/testforge-job.json; doc artifact dung job khi can.
+      Doi chieu target/revision, suite, case bat buoc, verdict va evidence.
+      Khong tao job moi, khong sua test, khong merge/deploy.
+      Ghi reports/review_result.md: ket luan, evidence va gioi han con lai.
+      Thieu hoac sai bang chung: BLOCKED. Du va dat: DONE de nguoi dung duyet.

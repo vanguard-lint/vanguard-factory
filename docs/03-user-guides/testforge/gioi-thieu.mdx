@@ -1,14 +1,36 @@
 ---
 title: TestForge AI — hướng dẫn sử dụng
-description: Chạy test bảo vệ, đọc bằng chứng, thẩm định kết quả.
+description: Chọn luồng kiểm thử TestForge, kết nối broker và xem kết quả từ workflow Workloop.
 sidebar_position: 1
 sidebar_label: TestForge — HDSD
 ---
 
 # TestForge AI — hướng dẫn sử dụng
 
-TestForge là agent kiểm chứng độc lập của hệ thống — **agent làm việc nói "xong" chưa phải là
-xong**. Kiến trúc & gate: [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+TestForge cung cấp kiểm thử chức năng, hồi quy và hiệu năng, cùng báo cáo để QA/Dev thẩm định.
+Agent trong Harness gọi plugin `vai_testforge`; plugin gửi yêu cầu tới **TestForge broker** và
+nhận kết quả theo mã job. Trong quy trình có DAG, người dùng theo dõi node QA và duyệt ở Workloop.
+
+Kiến trúc & gate: [TestForge AI](/docs/architecture/tang-3-harness/testforge-test-agent).
+
+## Chọn luồng phù hợp
+
+| Bạn cần | Luồng sử dụng | Hướng dẫn |
+|---|---|---|
+| Kết nối dịch vụ lần đầu | Cài plugin → cấu hình broker → health | [Cài đặt và kết nối](/docs/user-guides/testforge/cai-dat-ket-noi) |
+| Giao kiểm thử bằng ngôn ngữ tự nhiên | `testforge_command`: xem kế hoạch → xác nhận → chạy | [Quy trình kiểm thử](/docs/user-guides/testforge/quy-trinh-kiem-thu) |
+| Chạy lại bộ test đã duyệt | `testforge_staging` với suite/profile cố định | [Tích hợp Workloop](/docs/user-guides/testforge/tich-hop-workloop) |
+| Khám phá UI và tạo testcase | `testforge_explore` hoặc `testforge_orchestrate` | [Quy trình kiểm thử](/docs/user-guides/testforge/quy-trinh-kiem-thu) |
+| Tra job cũ hoặc xử lý lỗi | `testforge_result` và evidence đúng job | [Xử lý sự cố](/docs/user-guides/testforge/xu-ly-su-co) |
+
+:::note[Phạm vi hướng dẫn]
+
+Các ví dụ là mẫu để cấu hình và nghiệm thu trên staging. Định nghĩa tool được đối chiếu từ
+`vai_testforge@1.0.0`, commit `f9120a7`; chưa xác nhận một lượt chạy mới trên môi trường hiện tại.
+Luồng hồi quy trong Workloop là workflow mẫu cần đưa vào factory, không phải nút hoặc node
+TestForge có sẵn trong mọi dashboard.
+
+:::
 
 ## Vai trò sử dụng trong một lần kiểm thử
 
@@ -30,7 +52,8 @@ xong**. Kiến trúc & gate: [TestForge AI](/docs/architecture/tang-3-harness/te
 
 | Kết quả | Ý nghĩa | Việc tiếp theo |
 |---|---|---|
-| `PASS` / `HEALED_PASS` | Đạt ngay / đạt sau khi sửa test | Đọc bằng chứng; đưa vào regression khi qua gate + được duyệt |
+| `PASS` | Đạt kỳ vọng của testcase | Đối chiếu đúng suite/target; qua gate và review trước khi đưa vào regression |
+| `HEALED_PASS` | Đạt sau khi thay đổi test/locator | Review phần thay đổi, giữ kỳ vọng nghiệp vụ; duyệt revision test mới trước khi dùng làm chuẩn |
 | `FAIL` / `ERROR` / `PARTIAL` | Chưa đạt / lỗi chạy / chưa hoàn tất | Đối chiếu bước lỗi, dữ liệu, log; xử lý rồi chạy lại |
 | **Recommendation hiệu năng** | Số liệu vi phạm + nguyên nhân khả dĩ + hành động ưu tiên | Dev thực hiện validation plan trước khi kết luận |
 
@@ -39,15 +62,24 @@ PASS / PASS_WITH_WARNING / FAIL — áp dụng override phải ghi người phê
 
 ## Bằng chứng lưu theo lần chạy
 
-PASS/FAIL từng testcase · log, ảnh, trace khi phát sinh · mã lần chạy để đối chiếu · video khi có.
-Khi FAIL: dùng log + bằng chứng để xác minh **trước khi** chấp nhận thay đổi.
+Lưu Workloop job ID, session ID, TestForge job ID và target/revision ứng dụng. Mỗi testcase cần
+có kết quả cùng đường dẫn log/ảnh/trace/video/JUnit khi runner tạo ra. Chỉ số hiệu năng đi kèm
+profile tải và ngưỡng đã dùng. Không mặc định mọi job đều tạo đủ tất cả loại artifact.
 
-## Nội dung sẽ bổ sung
+Khi FAIL, đọc bước lỗi và evidence trước khi chấp nhận thay đổi. Job `completed` không đồng
+nghĩa tất cả testcase PASS, và báo cáo PASS không tự cho phép merge hoặc release.
 
-- [ ] Cài đặt/kết nối TestForge API
-- [ ] Ví dụ end-to-end đầy đủ (đầu vào → kế hoạch → chạy → báo cáo)
-- [ ] Cấu hình ngưỡng và profile tải
-- [ ] Kết quả đúng phải thấy (cho từng mục trên)
+## Kết quả đúng phải thấy
+
+Report chỉ rõ target/revision, suite hoặc chức năng, mã job và kết quả từng case. Bằng chứng
+đọc được, khớp cùng lượt chạy; phần chưa kiểm chứng và quyết định review được ghi rõ.
+
+## Bắt đầu từ Workloop
+
+1. QA/admin chuẩn bị plugin và broker theo [hướng dẫn kết nối](/docs/user-guides/testforge/cai-dat-ket-noi).
+2. Đưa [workflow hồi quy mẫu](/docs/user-guides/testforge/tich-hop-workloop) vào factory theo PR.
+3. Sync và chạy; xem report từng node ở **Runs**, xử lý card ở **Duyệt**.
+4. Đối chiếu mã job TestForge và bằng chứng trước khi bàn giao kết quả.
 
 ## Liên kết
 

@@ -1,61 +1,95 @@
 ---
 title: Tổng quan Harness
-description: Core runtime & security, task loop contract, memory bridge, vault và hệ sinh thái plugin.
+description: Ranh giới Workloop, phiên agent DSH, TaskLoop, vault và các plugin Sandbox, Memory, TestForge.
 sidebar_position: 1
 ---
 
-# Tầng 3 · Harness — bộ não & cánh tay hệ thống
+# Tầng 3 · Harness — môi trường làm việc của agent
+
+Harness cung cấp phiên agent, model, công cụ, workspace, TaskLoop và secret. **Workloop điều phối
+công việc; Harness thực thi từng task.** Người dùng theo dõi workflow và duyệt tại dashboard
+Workloop; quản trị viên dùng giao diện DSH để cấu hình hoặc kiểm tra sâu một phiên.
 
 ```mermaid
 flowchart TB
-    A["Agent trong task loop"] --> TL
-    subgraph H["Harness — core runtime & security"]
-        TL["Task loop contract<br/>+ memory bridge"]
-        VA["Central vault<br/>secret chỉ qua ref"]
-        PL["Plugin server<br/>+ webhook handler"]
+    W["Workloop: DAG và cổng duyệt"] --> G["Gateway DSH"]
+    G --> S["Session agent và TaskLoop"]
+    subgraph H["Harness DSH"]
+        S --> V["Vault"]
+        S --> P["Plugin và công cụ"]
     end
-    TL --> VA
-    TL --> PL
-    PL -->|"HTTP REST theo contract"| P
-    subgraph P["Hệ sinh thái plugin"]
-        direction LR
-        G["Gitea<br/>source of truth"]
-        M["Agent Memory (Cognee)<br/>ngữ cảnh dự án"]
-        T["TestForge AI<br/>kiểm chứng độc lập"]
-        B["Steel · Playwright/k6<br/>browser & tải"]
-    end
+    P --> B["Sandbox Kit"]
+    P --> M["Agent Memory"]
+    P --> T["TestForge broker"]
+    T --> E["Runner và bằng chứng kiểm thử"]
 ```
 
-## Core Runtime & Security
+## Ai chịu trách nhiệm phần nào?
 
-Harness là nơi một agent **có đủ năng lực hoàn thành nhiệm vụ**. Lõi gồm:
+| Thành phần | Trách nhiệm | Kết quả cần theo dõi |
+|---|---|---|
+| **Workloop** | Nạp spec từ factory, chạy DAG, lưu job/events, tổ chức review và resume | Workloop job ID, SHA của spec, trạng thái node, quyết định duyệt |
+| **Gateway DSH** | Chuyển node thành contract và phiên agent; theo dõi tiến độ, timeout và re-arm | Contract ID, session ID, số attempt |
+| **Harness** | Chạy model, cung cấp công cụ và workspace, quản lý phiên | Tool call, nội dung phiên, report và mức sử dụng |
+| **Plugin** | Đăng ký năng lực cụ thể và kết nối dịch vụ tương ứng | Tham số gọi, mã job dịch vụ, dữ liệu trả về |
+| **Sandbox/TestForge/Memory** | Thực thi hoặc lưu trữ trong backend riêng của từng dịch vụ | Artifact, kết quả test, ngữ cảnh có nguồn |
 
-- **Task Loop Contract & Memory Bridge** — hợp đồng vòng làm việc của task và cầu nối sang memory.
-- **Central Vault (secrets & security ingress)** — secret tập trung, agent chỉ nhận qua ref.
-- **Harness Plugin Server & Webhook Handler** — điểm mở rộng cho plugin và nhận sự kiện.
+Plugin được nạp trong runtime DSH. Kết nối tới backend phụ thuộc plugin: TestForge dùng HTTP;
+Agent Memory dùng MCP; gateway Workloop dùng SDK/RPC của DSH. Không coi tất cả kết nối là một
+REST API chung hoặc dùng chung token.
 
-## Hệ sinh thái plugin con
+## Từ một node Workloop đến một phiên agent
 
-| Plugin | Vai trò |
-|---|---|
-| **Gitea** | Source of truth — Git repo, webhooks. Xem [công cụ hỗ trợ](/docs/user-guides/cong-cu-ho-tro/gitea) |
-| **Agent Memory (Cognee)** | Knowledge graph — ngữ cảnh dự án. Xem [Cognee](/docs/architecture/tang-3-harness/cognee-agent-memory) |
-| **TestForge AI** | Kiểm chứng độc lập + bằng chứng. Xem [TestForge](/docs/architecture/tang-3-harness/testforge-test-agent) |
-| **Steel Browser** | Computer use, UI testing — click/screenshot cho agent |
-| **Playwright + k6** | Test chức năng (Playwright API) + load test (k6) |
+1. Workloop đọc `role`, brief, model và giới hạn thực thi trong spec/factory.
+2. Gateway tạo hoặc đối soát contract TaskLoop và gắn phiên vào workspace tương ứng.
+3. Agent nhận persona cùng brief, dùng các tool được runtime cấp và ghi report.
+4. Gateway quan sát trạng thái contract, lưu session ID và kết quả về node Workloop.
+5. Cổng review trong workflow quyết định bước tiếp theo dựa trên report và bằng chứng.
 
-Giao tiếp giữa harness và các plugin con: **giao thức HTTP REST**.
+Một workflow có nhiều node; một node có thể có nhiều attempt/session khi phục hồi. Dùng cả
+**job ID → node → contract/session ID** để tra cứu. Không đánh đồng dòng trả lời cuối của agent
+với kết quả kiểm thử độc lập.
 
-## Nguyên tắc plugin
+## TaskLoop và phục hồi
 
-Mọi năng lực (model/runtime, tools/connectors, memory, sandbox, testing, artifact delivery) nối
-vào harness qua **điểm mở rộng rõ ràng**, theo contract định sẵn — xem
-[Viết plugin](/docs/developer-docs/viet-plugin).
+Contract thể hiện tiến độ nhiệm vụ:
 
-:::info[Hướng dẫn sử dụng]
+`PENDING → IN_PROGRESS → DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT`.
 
-Để làm với harness (không chỉ đọc kiến trúc): cài đặt, tạo phiên agent và gọi plugin qua taskloop —
-xem [HDSD Harness/DSH](/docs/user-guides/harness-dsh/gioi-thieu). Vai trò từng plugin con trong
-bảng trên có trang riêng ở mục Hướng dẫn sử dụng.
+`DONE` cho biết agent đã hoàn thành hợp đồng task. Testcase FAIL, lỗi broker và yêu cầu chờ
+con người vẫn cần được ghi riêng trong report. Workloop có các trạng thái job và cổng duyệt
+riêng; xem [Trạng thái](/docs/reference/trang-thai).
 
-:::
+Gateway có cơ chế phát hiện stall và re-arm theo ngân sách. Task tạo job từ xa cần lưu job ID
+để đối soát trước khi thử lại; mở phiên agent mới không làm job TestForge cũ tự dừng.
+
+## Vault và quyền công cụ
+
+Secret được cấu hình ở host/vault phù hợp, dùng tên ref trong hướng dẫn và brief. Token gọi
+Workloop, token DSH và token TestForge là ba loại khác nhau. Secret của Workloop không mặc nhiên
+được sao chép sang Settings → Secrets của Harness hoặc môi trường broker.
+
+Persona mô tả cách agent làm việc; quyền dùng tool phải được cấu hình ở runtime. Việc viết
+"chỉ đọc" trong brief không thay thế kiểm soát quyền của plugin/backend.
+
+## Hệ sinh thái tích hợp
+
+| Năng lực | Vai trò | Tài liệu |
+|---|---|---|
+| **Gitea** | Lưu source, spec, persona, PR và phiên bản | [Gitea](/docs/user-guides/cong-cu-ho-tro/gitea) |
+| **Sandbox Kit** | Workspace/VFS và môi trường thực thi cô lập | [Sandbox Kit](/docs/user-guides/sandbox-kit/gioi-thieu) |
+| **Agent Memory** | Truy xuất ngữ cảnh có nguồn theo phạm vi được cấp | [Cognee](/docs/architecture/tang-3-harness/cognee-agent-memory) |
+| **TestForge AI** | Kiểm thử chức năng, hồi quy và hiệu năng; trả bằng chứng | [Kiến trúc TestForge](/docs/architecture/tang-3-harness/testforge-test-agent) |
+| **Steel Browser** | Thao tác trình duyệt từ agent | [Steel Browser](/docs/user-guides/cong-cu-ho-tro/steel-browser) |
+| **Playwright/k6** | Engine kiểm thử chức năng và tải của runner | [Playwright & k6](/docs/user-guides/cong-cu-ho-tro/playwright-k6) |
+
+TestForge plugin là client tới broker, không tự cài Playwright/k6 hoặc biến mọi job thành job
+trong Sandbox Kit. Vị trí runner và môi trường SUT cần xác nhận theo deployment.
+
+## Bắt đầu sử dụng
+
+- [Cài đặt và kết nối Harness](/docs/user-guides/harness-dsh/cai-dat-ket-noi).
+- [Vận hành Harness từ Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop).
+- [Đưa kiểm thử TestForge vào workflow](/docs/user-guides/testforge/tich-hop-workloop).
+
+Mở rộng runtime theo contract tại [Viết plugin](/docs/developer-docs/viet-plugin).
