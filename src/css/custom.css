@@ -80,7 +80,7 @@
   --on-primary: #fff;
 
   /* Vanguard OSV-derived Dark Backgrounds */
-  --ifm-background-color: #0a0a0b;
+  --ifm-background-color: #121214;
   --ifm-background-surface-color: #141416;
   --ifm-navbar-background-color: #0a0a0b;
   --ifm-navbar-shadow: none;
@@ -230,6 +230,7 @@
 .alert--secondary {
   --ifm-alert-background-color-highlight: rgba(127, 127, 127, 0.12);
 }
+
 .alert--success,
 .alert--warning,
 .alert--danger {
@@ -237,7 +238,12 @@
 }
 
 /* Headings — sans đậm, tracking chặt (phong cách SaaS landing) */
-h1, h2, h3, h4, h5, h6,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
 .hero__title {
   font-family: var(--ifm-heading-font-family);
   font-weight: 700;
@@ -257,6 +263,7 @@ h1, h2, h3, h4, h5, h6,
   color: var(--ifm-color-content-secondary);
   margin: 0;
 }
+
 .eyebrow::before {
   content: '';
   width: 20px;
@@ -304,20 +311,24 @@ h1, h2, h3, h4, h5, h6,
   font-size: 0.9rem;
   transition: all 0.18s ease;
 }
+
 .navbar .btn--primary {
   background: var(--red);
   color: #ffffff !important;
 }
+
 .navbar .btn--primary:hover {
   background: var(--red-hover);
   color: #ffffff !important;
   text-decoration: none;
 }
+
 .navbar .btn--ghost {
   background: transparent;
   border: 1px solid var(--line-strong);
   color: var(--ifm-font-color-base);
 }
+
 .navbar .btn--ghost:hover {
   border-color: var(--ifm-font-color-base);
   color: var(--ifm-font-color-base);
@@ -330,11 +341,13 @@ h1, h2, h3, h4, h5, h6,
   font-weight: 500;
   padding: 8px 16px;
 }
+
 .theme-announcement-bar a {
   color: #ff8d84;
   font-weight: 600;
   text-decoration: underline;
 }
+
 .theme-announcement-bar a:hover {
   color: #ffb0aa;
 }
@@ -357,6 +370,7 @@ h1, h2, h3, h4, h5, h6,
   border-color: var(--red);
   color: #ffffff;
 }
+
 .button--primary:hover {
   background-color: var(--red-hover);
   border-color: var(--red-hover);
@@ -369,6 +383,7 @@ h1, h2, h3, h4, h5, h6,
   border-color: var(--line-strong);
   color: var(--ifm-font-color-base);
 }
+
 .button--secondary:hover {
   background: transparent;
   border-color: var(--ifm-font-color-base);
@@ -456,11 +471,13 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: none;
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
+
 .card:hover {
   border-color: rgba(231, 69, 57, 0.45);
   transform: translateY(-2px);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07);
 }
+
 [data-theme='dark'] .card:hover {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
@@ -469,6 +486,7 @@ h1, h2, h3, h4, h5, h6,
 .adlc-life {
   padding: 48px 0 80px;
 }
+
 .adlc-life .head {
   display: flex;
   justify-content: space-between;
@@ -479,6 +497,7 @@ h1, h2, h3, h4, h5, h6,
   max-width: 1240px;
   margin: 0 auto;
 }
+
 .adlc-life h2 {
   font-family: var(--ifm-font-family-monospace) !important;
   font-weight: 400 !important;
@@ -486,6 +505,7 @@ h1, h2, h3, h4, h5, h6,
   margin: 0;
   letter-spacing: -0.01em;
 }
+
 .adlc-life .lg {
   font-family: var(--ifm-font-family-monospace);
   font-size: 0.85rem;
@@ -494,6 +514,7 @@ h1, h2, h3, h4, h5, h6,
   gap: 20px;
   align-items: center;
 }
+
 .adlc-life .lg i {
   display: inline-block;
   width: 12px;
@@ -503,44 +524,54 @@ h1, h2, h3, h4, h5, h6,
   margin-right: 8px;
   vertical-align: -1px;
 }
+
 .adlc-life .lg i.h {
   background: var(--ifm-color-primary);
 }
+
 .adlc-life svg {
   display: block;
   width: 100%;
 }
+
 .adlc-life .dash {
   stroke: var(--rule);
   stroke-width: 1;
   stroke-dasharray: 3 3;
   fill: none;
 }
+
 .adlc-life .rail {
   stroke: var(--rule);
   stroke-width: 1.5;
   fill: none;
 }
+
 .adlc-life .disc {
   fill: var(--disc);
 }
+
 .adlc-life .disc.h {
   fill: var(--ifm-color-primary);
 }
+
 .adlc-life .num {
   fill: var(--disc-ink);
   font-family: var(--ifm-font-family-monospace);
   font-size: 16px;
   text-anchor: middle;
 }
-.adlc-life .disc.h + .num {
+
+.adlc-life .disc.h+.num {
   fill: var(--on-primary);
 }
+
 .adlc-life .nm {
   fill: var(--ifm-font-color-base);
   font-family: var(--ifm-font-family-monospace);
   font-size: 17px;
 }
+
 .adlc-life .ring {
   fill: none;
   stroke: var(--ifm-color-primary);
@@ -548,20 +579,25 @@ h1, h2, h3, h4, h5, h6,
   stroke-dasharray: 2 5;
   stroke-linecap: round;
 }
+
 .adlc-life .tk {
   fill: var(--ifm-font-color-base);
 }
+
 .adlc-life .tk.w {
   fill: var(--ifm-color-primary);
 }
+
 .adlc-life .tl {
   fill: var(--ifm-color-content-secondary);
   font-family: var(--ifm-font-family-monospace);
   font-size: 13px;
 }
+
 .adlc-life .tl.w {
   fill: var(--ifm-color-primary);
 }
+
 .adlc-life .cap {
   fill: var(--ifm-color-content-secondary);
   font-family: var(--ifm-font-family-monospace);
@@ -573,18 +609,21 @@ h1, h2, h3, h4, h5, h6,
   margin: 2rem 0;
   text-align: center;
 }
+
 .diagram-figure img {
   max-width: 100%;
   height: auto;
   border-radius: var(--ifm-global-radius);
   border: 1px solid var(--line);
 }
+
 .diagram-figure figcaption {
   margin-top: 0.75rem;
   font-family: var(--ifm-font-family-monospace);
   font-size: 0.85rem;
   color: var(--ifm-color-content-secondary);
 }
+
 /* Logo thương hiệu ở trang mở đầu section — nhỏ, không viền */
 .diagram-figure--brand img {
   border: none;
@@ -599,7 +638,8 @@ h1, h2, h3, h4, h5, h6,
   justify-content: center;
   margin: 2rem 0;
 }
-.docusaurus-mermaid-container > svg {
+
+.docusaurus-mermaid-container>svg {
   max-width: 100%;
   height: auto;
 }
