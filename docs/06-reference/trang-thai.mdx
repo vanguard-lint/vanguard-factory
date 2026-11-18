@@ -6,6 +6,10 @@ sidebar_position: 5
 
 # Trạng thái & State machine Reference
 
+Trang này mô tả trạng thái node/gateway Workloop. TaskLoop file, session execution hub và
+delivery callback có tập trạng thái riêng. Tra [giao diện Harness](/docs/reference/harness-interfaces)
+trước khi ánh xạ trạng thái của một adapter mới.
+
 ## State machine của node
 
 ```mermaid
@@ -44,8 +48,9 @@ stateDiagram-v2
 
 - **Gate chỉ nhận `DONE`.** Node mang cờ `gate` với `DONE_WITH_CONCERNS` không được qua — tránh
   "xong ẩu" lọt qua cổng duyệt.
-- Trạng thái do **hệ thống ghi** (log trung lập), không do agent tự báo —
-  [Kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).
+- Engine ghi trạng thái node và lịch sử sự kiện. Với `vai-taskloop`, agent vẫn cập nhật
+  contract qua tool; `DONE` của contract cần đi kèm đầu ra, kiểm chứng và gate. Xem
+  [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap).
 - PAUSE/RESUME thao tác ở cấp **run**: dừng ở ranh giới wave, resume từ checkpoint —
   [Phục hồi gián đoạn](/docs/architecture/kiem-chung-phuc-hoi/phuc-hoi-gian-doan).
 - Trạng thái chi tiết từng node đọc qua `get_run`/`get_report` hoặc

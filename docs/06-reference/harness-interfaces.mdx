@@ -1,0 +1,123 @@
+---
+title: Giao diện và phạm vi Harness
+description: Phân biệt gateway Workloop, SDK TaskLoop, execution hub ADLC và profile iteration; tra API và credential tương ứng.
+sidebar_position: 15
+---
+
+# Giao diện và phạm vi Harness
+
+Harness có nhiều đường kết nối cùng tồn tại trong source. Chọn giao diện theo adapter và
+profile của task trước khi chọn endpoint, token hoặc cách phục hồi.
+
+## Các đường kết nối
+
+| Đường kết nối | Bên điều phối | API/cách gọi | Căn cứ kết thúc |
+|---|---|---|---|
+| Gateway DSH của Workloop | Engine DAG Workloop | `HarnessGateway`, SDK/RPC và TaskLoop | Contract, report và gate của node |
+| `dsh_web_sdk` trong ADLC | Chương trình Python gọi DSH | RPC `/api/*`, route `/api/taskloop/*` | File contract của `vai-taskloop` |
+| Execution hub ADLC | Coordinator và attempt ledger ADLC | `/api/v1/adlc-harness` | Result đã verify, Submit/delivery và acceptance của coordinator |
+| Contract authoring | Workflow soạn đặc tả ADLC | `/api/v1/adlc-harness-authoring` | Tài liệu/reference để con người xem và duyệt |
+| Contract execution | Workflow ràng buộc contract ADLC | `/api/v1/adlc-harness-contract` | Patch và predicate gắn contract/policy |
+| Contract verification recovery | Profile recovery riêng của ADLC | `/api/v1/adlc-harness-contract-recovery` | Checkpoint/proof gốc, sau đó review/Submit |
+| Native iteration | Task Loop kernel ADLC | `/api/v1/adlc-harness-iterations` | Đề xuất file; ADLC tự capture và chạy protected checks |
+
+`TaskLoop contract` của gateway là file tiến độ. Contract đặc tả của ADLC có revision,
+phê duyệt và ràng buộc phạm vi. Hai loại contract không dùng chung schema hay quy tắc sửa.
+
+## SDK TaskLoop
+
+SDK Python trong source ADLC đọc `DSH_BASE_URL`, `DSH_TOKEN`, `DSH_TIMEOUT`. Nó đăng nhập bằng
+token DSH rồi giữ cookie cho các request tiếp theo. Workloop có SDK/gateway riêng; tên env
+của helper Python không tự thay cấu hình `harness` trong factory.
+
+| Route | Tác dụng |
+|---|---|
+| `POST /api/taskloop/contract` | Tạo contract cùng brief |
+| `GET /api/taskloop/task?dir=...&n=...` | Đọc một contract |
+| `GET /api/taskloop/tasks?dir=...` | Liệt kê task của workspace |
+| `PATCH /api/taskloop/contract` | Cập nhật trường/trạng thái hoặc thêm comment |
+
+Chỉ tạo mới contract; xung đột cần đọc lại task trước khi chọn ID khác. Route cập nhật là
+thao tác ghi, có thể ảnh hưởng goal loop. `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED` và
+`NEEDS_CONTEXT` đều làm SDK dừng chờ. Hết deadline có thể trả `timeout: true`.
+
+## Execution hub REST
+
+Các route sau có prefix `/api/v1/adlc-harness`, yêu cầu bearer `ADLC_HARNESS_API_TOKEN`:
+
+| Method và route | Tác dụng |
+|---|---|
+| `GET /health` | Đọc readiness |
+| `GET /plugins` | Kiểm tra lại inventory/version/digest |
+| `POST /sessions` | Tạo hoặc đọc lại submission theo idempotency key |
+| `GET /sessions/{session_id}` | Đọc trạng thái, sự kiện, interaction và result |
+| `GET /sessions/{session_id}/artifacts/{artifact_id}` | Đọc artifact theo định danh đã cấp |
+| `POST /sessions/{session_id}/interactions/{interaction_id}/responses` | Trả lời interaction của phiên |
+| `POST /sessions/{session_id}/submit` | Submit result đã chuẩn bị |
+| `POST /sessions/{session_id}/cancel` | Yêu cầu hủy phiên |
+
+Request pin `profile_ref`, `operation`, `plugin_lock`, `result_schema_ref` cùng các ID
+`request_id`, `workflow_run_id`, `task_run_id`, `attempt_id`. `callback_ref` chọn cấu hình
+callback do deployment giữ; caller không được cấp một URL callback tùy ý.
+
+Hub thiếu bearer cấu hình trả `503 HARNESS_API_NOT_CONFIGURED`; sai bearer trả 401.
+Token Web UI DSH không thay bearer này. Các API authoring/execution/recovery có root và
+profile riêng, cần được cấu hình theo đúng adapter.
+
+### Trạng thái của hub
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `ACCEPTED`, `PROVISIONING` | Request đã nhận, đang chuẩn bị môi trường |
+| `RUNNING` | Driver đang chạy task |
+| `WAITING_INTERACTION` | Chờ câu trả lời `FORM` hoặc `APPROVAL` |
+| `VERIFYING` | Verifier đang kiểm tra hoặc profile recovery đang đối soát proof |
+| `READY_FOR_SUBMISSION` | Result chờ Submit theo profile; đọc verdict trước khi Submit |
+| `DELIVERING` | Outbox đang chuyển kết quả về coordinator |
+| `SUCCEEDED`, `FAILED`, `CANCELLED` | Trạng thái cuối của session hub |
+
+Delivery có trạng thái riêng: `PENDING`, `DELIVERING`, `DELIVERED`, `DEAD_LETTER`.
+Verifier có verdict `PASSED`, `FAILED`, `ERROR`, `SKIPPED`. Không dùng delivery thành công
+để thay verdict kiểm thử hoặc quyết định gate.
+
+## Native iteration
+
+`vai-adlc-task-loop@0.1.0` là profile chỉ đề xuất file, dùng credential riêng
+`ADLC_HARNESS_ITERATION_API_TOKEN`. Source có `GET /health`, `POST /sessions`, đọc session
+với `request_digest`, cùng các action `execute`, `cancel`, `release`.
+
+Mỗi vòng tạo agent native mới, khóa tool và trả đúng cấu trúc `files`. ADLC kiểm tra phạm
+vi ghi, tạo candidate và chạy protected checks. Profile này không có Submit, approval hay
+callback của execution hub. Route model bị pin; không áp mặc định model của phiên chat.
+
+Usage token là dữ liệu bắt buộc. Chi phí tiền chưa đo được có giá trị `null`; profile hiện
+từ chối spec có trần chi phí tiền mà nó không thể kiểm chứng. Lượt ghi không rõ đã được
+nhận hay chưa phải được đối soát, không tự gửi lại prompt. Lượt bị gián đoạn chưa xác nhận
+có thể giữ `released:false` để operator xử lý.
+
+## Mức xác nhận
+
+| Phần | Đã đối chiếu ở bản bổ sung 18/11/2026 | Còn phải xác nhận trên deployment |
+|---|---|---|
+| HDSD public Harness | Có ba trang: giới thiệu, cài đặt/kết nối, vận hành từ Workloop | Plugin/profile/version thực tế |
+| SDK Python | Chữ ký hàm, route, workspace grouping, terminal status và timeout | Tương thích với SDK/plugin đang chạy |
+| Hub và plugin ADLC | Source xử lý bearer, lock, interaction, capture và callback | Readiness và smoke test của đúng release |
+| Recovery/iteration | Source và giới hạn profile opt-in | Flags, lock, khả năng provider và sign-off live |
+| Workflow TestForge | Mẫu và ranh giới tích hợp đã có trong docs | Một lượt E2E với SUT, suite và evidence thực |
+
+Không suy trạng thái triển khai từ việc một thư mục plugin tồn tại. Bản source Harness
+tham chiếu còn có thay đổi local chưa commit, nên commit HEAD không mô tả đầy đủ snapshot.
+
+## Nguồn đối chiếu
+
+Các đường dẫn tính từ repository source ADLC hoặc checkout Harness tương ứng:
+
+- `sdk/dsh_web_sdk/{client,config,taskloop}.py`.
+- `adlc-flow/langflow/adlc/{harness_models,harness_client}.py`.
+- `adlc-contracts/harness/v0.1/README.md` và schema cùng thư mục.
+- `deepseek-harness/plugins/vai-adlc-runtime/lib/{index,runtime,plugin-integrity}.js`.
+- `deepseek-harness/plugins/vai-adlc-contract-execution/lib/verification.js`.
+- `deepseek-harness/plugins/vai-adlc-contract-recovery/lib/runtime.js` và `README.md`.
+- `deepseek-harness/plugins/vai-adlc-task-loop/README.md`.
+
+Hướng dẫn thao tác bắt đầu ở [Harness](/docs/user-guides/harness-dsh/gioi-thieu).

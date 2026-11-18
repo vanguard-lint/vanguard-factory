@@ -1,45 +1,31 @@
 ---
-title: SDK & Gateway
-description: HarnessGateway ABC, ReArmControlLoop, DSH/OpenCode SDK — lớp giao tiếp giữa engine và môi trường thực thi agent.
+title: SDK và gateway
+description: Interface giao task, chính sách re-arm, SDK DSH và ranh giới execution hub ADLC.
 sidebar_position: 5
 ---
 
-# SDK & Gateway
+# SDK và gateway
 
 ## Kiến trúc gateway
 
-Gateway là lớp giữa **engine workflow (Tầng 2)** và **môi trường thực thi agent (Tầng 3)**.
-Nguyên tắc kiểu Java interface: engine **không import SDK của harness nào** — chỉ dùng interface
-`HarnessGateway` + các DTO chuẩn (`TaskSpec`, `Contract`, `SessionRef`, `SessionHealth`,
-`ApprovalRequest`).
+Gateway nối engine workflow với runtime agent. Engine gọi `HarnessGateway` cùng các DTO
+`TaskSpec`, `Contract`, `SessionRef`, `SessionHealth`, `ApprovalRequest`; SDK của từng
+runtime nằm trong adapter cụ thể.
 
-```
-                  ┌────────────────────────────┐
-   Engine DAG ───▶│  ReArmControlLoop (base)   │  stall → re-arm TÁI SỬ DỤNG session
-                  │  · token budget            │  submit fail → kill + session mới
-                  │  · max_rearms              │  taxonomy lỗi → chính sách chung
-                  └──────────┬─────────────┘
-                             │ 4 hook do gateway cài
-              ┌──────────────┴──────────────┐
-              ▼                             ▼
-   ┌────────────────────┐        ┌────────────────────┐
-   │  DSH SDK           │        │  OpenCode SDK      │
-   │  session/workspace │        │  server + pair +   │
-   │  taskloop/vault    │        │  session_prompt    │
-   └────────────────────┘        └────────────────────┘
-```
+Engine giao task qua interface gateway. Gateway cụ thể xử lý session, prompt và đọc trạng
+thái; vòng điều khiển chung áp dụng giới hạn thời gian, token và re-arm. Chính sách restart
+và submit phải được kiểm tra ở adapter đang dùng.
 
 Chọn gateway bằng `factory.yaml` (`harness.kind`): `dsh` (harness nội bộ) · `opencode` (agent
 nền OpenCode) · `fake` (smoke-test không tốn token).
 
-## HarnessGateway — hai tầng interface
+## HarnessGateway
 
-**Tầng TASK (cấp cao)** — engine gọi duy nhất đường này để giao việc:
+Tầng TASK nhận việc từ engine qua `run_contract_task(name, role, brief, …)` và trả `Contract`.
+Gateway xử lý tạo TaskLoop contract, mở session, gửi prompt, stall/re-arm, chờ terminal
+và thu report.
 
-- `run_contract_task(name, role, brief, …)` → `Contract` — harness tự lo mọi thứ: tạo contract
-  taskloop, mở session, prompt, stall/re-arm, chờ terminal, thu report.
-
-**Tầng CONTROL (cấp hàm)** — soi/tác động bên trong khi cần giám sát:
+Tầng CONTROL cung cấp các hàm giám sát và điều khiển phiên:
 
 - Vòng đời session: `open_session` / `submit_prompt` / `poll_session` / `kill_session`.
 - Quan sát: `read_session_content`, `diagnose_session` (verdict chuẩn: `clean`/`abrupt`/
@@ -47,36 +33,101 @@ nền OpenCode) · `fake` (smoke-test không tốn token).
 - HITL: `pending_approvals` / `answer_approval`.
 - Files phía server: `read_file` / `list_files` / `write_file`.
 
-Quy tắc: method bắt buộc là `@abstractmethod`; method tùy chọn raise `NotImplementedError` —
-harness **phải khai báo đúng `capabilities()`** để bên gọi không gọi hú họa.
+Method bắt buộc dùng `@abstractmethod`; method tùy chọn raise `NotImplementedError`.
+Gateway khai báo `capabilities()` để bên gọi kiểm tra trước khi dùng chức năng tùy chọn.
 
-## ReArmControlLoop — Template Method
+## ReArmControlLoop
 
-Chính sách chịu lỗi chung, harness chỉ cài 4 hook (`_open_session`, `_submit`, `_poll`, `_kill`).
-Chi tiết vòng lặp và các nhánh xử lý: [Chịu lỗi & phục hồi](/docs/architecture/tang-2-workflow/chiu-loi-phuc-hoi).
-Điểm thiết kế đáng nhớ:
+Adapter cài bốn hook `_open_session`, `_submit`, `_poll`, `_kill`; lớp base giữ chính sách
+chịu lỗi chung. Khi stall, re-arm tái sử dụng phiên cũ để giữ context. Submit thất bại lại
+có nguy cơ prompt đã vào hàng đợi: gateway dừng phiên đó rồi mở phiên mới theo chính sách
+adapter. Không thêm retry RPC bên ngoài mà bỏ qua khả năng prompt bị gửi trùng.
 
-- **Re-arm tái sử dụng session cũ** — giữ context agent đã làm chủ (thất bại thật khi mở session
-  mới liên tiếp: agent đọc lại brief từ đầu rồi stall lại).
-- **Submit fail ≠ stall** — chưa chắc agent nhận việc → kill session (hủy cả prompt đã queue) rồi
-  mở session mới; không retry mù ở tầng RPC (prompt nhân bản).
-- **Token budget** — task có trần; harness nào cài `usage` sẽ bị kiểm tra mỗi vòng, vượt → kill.
-- **Chính sách theo mã lỗi** — `retry_policy()`: `AUTH`/`MISSING_CREDENTIAL`/`INVALID_INPUT` →
-  abort · `CONTRACT_CONFLICT` → skip · `RATE_LIMIT`/`PROVIDER_5XX` → backoff · còn lại → re-arm.
+Gateway có hỗ trợ usage kiểm tra ngân sách mỗi vòng và dừng khi vượt trần. `retry_policy()`
+phân loại lỗi như sau:
 
-## Contract — DTO trạng thái chuẩn
+| Mã lỗi | Chính sách |
+|---|---|
+| `AUTH`, `MISSING_CREDENTIAL`, `INVALID_INPUT` | Abort |
+| `CONTRACT_CONFLICT` | Skip |
+| `RATE_LIMIT`, `PROVIDER_5XX` | Backoff |
+| Lỗi còn lại theo chính sách base | Re-arm |
+
+Chi tiết vòng lặp nằm ở [chịu lỗi và phục hồi](/docs/architecture/tang-2-workflow/chiu-loi-phuc-hoi).
+
+## Contract DTO
 
 `Contract` là hợp đồng giữa engine và gateway: `n` (định danh `<workflow>--<node>--<run>`),
 `status` (6 trạng thái chuẩn), `attempts` (số lần re-arm + 1), `report_summary`, `report_path`,
-`session_ref` (OPAQUE — engine không hiểu bên trong, chỉ giữ để cancel), `events` (trail Gantt/SSE),
+`session_ref` (tham chiếu opaque để engine gửi yêu cầu cancel), `events` (trail Gantt/SSE),
 `errors` (theo taxonomy). Trạng thái: [State machine vòng đời](/docs/architecture/tang-2-workflow/state-machine).
 
 ## DSH SDK
 
-Client đầy đủ cho harness nội bộ: quản lý **session/workspace/project**, gọi **plugin taskloop**
+Client của gateway quản lý session/workspace/project, gọi plugin TaskLoop
 (create/get/list/update task), đọc vault qua ref, bắt sự kiện phiên, đọc usage/health. Contract
-được tạo **server-side ngay khi giao việc** (IN_PROGRESS ngay — người theo dõi thấy tiến độ) và
-brief được ghi thành file để agent đọc (tránh vượt giới hạn độ dài prompt).
+được tạo phía server; brief được ghi thành file để agent đọc. Kiểm tra trạng thái thật từ
+contract thay vì suy ra agent đã chạy ngay sau khi lời gọi tạo task thành công.
+
+## SDK Python trong source ADLC
+
+Source ADLC có `sdk/dsh_web_sdk`, một client riêng để gọi DSH từ Python. Cài từ repository
+source đã được cấp, không cài từ repository tài liệu:
+
+```bash
+python -m pip install -e sdk
+```
+
+Client đọc `DSH_BASE_URL`, `DSH_TOKEN` và `DSH_TIMEOUT`, đổi token đăng nhập thành cookie và
+gọi RPC/route TaskLoop. Đường dẫn workspace mặc định được resolve phía server.
+
+| Hàm | Hành vi |
+|---|---|
+| `list_sessions()` | Đọc danh sách phiên, không gửi prompt |
+| `ensure_workspace(path)` | Đăng ký hoặc tìm workspace |
+| `create_session_for_workspace(path)` | Tạo phiên trong nhóm workspace |
+| `session_for_workspace(path)` | Tái sử dụng phiên có `cwd` khớp hoặc tạo mới |
+| `create_task(path, contract, brief_text)` | Tạo contract/brief trước prompt |
+| `get_task(path, n)`, `list_tasks(path)` | Đọc contract đã lưu |
+| `update_task(path, n, patch, comment)` | Sửa contract hoặc bổ sung comment |
+| `run_contract_task(...)` | Tạo task, gửi prompt và poll tới terminal/deadline |
+
+Ví dụ chỉ đọc task đã có:
+
+```python
+import asyncio
+from dsh_web_sdk import DshClient
+
+
+async def main():
+    async with DshClient() as client:
+        task = await client.get_task("/app/workspace/docs-demo", "1")
+        print(task.get("status"))
+
+
+asyncio.run(main())
+```
+
+SDK dừng chờ ở `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, `NEEDS_CONTEXT`; timeout có thể trả
+`timeout: true`. Caller cần xử lý các kết quả này riêng. Không gộp tất cả trường hợp trả về
+thành task thành công.
+
+RPC và HTTP helper có retry cho lỗi tạm thời nhưng chưa bảo đảm mọi thao tác ghi chỉ
+thực hiện một lần. Giữ định danh contract/session để đối soát sau timeout trước khi tạo
+task hoặc gửi prompt mới. Chi tiết chữ ký hàm cần đối chiếu đúng revision SDK đang cài.
+
+## Execution hub và iteration API
+
+ADLC còn có typed client `harness_client.py` dùng bearer để gọi execution hub. Client nhận
+request/attempt có correlation và plugin lock, hỗ trợ interaction, artifact, Submit và
+signed callback. Các API này không phải RPC của `dsh_web_sdk`.
+
+Profile native iteration lại chỉ trả đề xuất file; ADLC giữ candidate, protected checks và
+ngân sách. Adapter này không dùng callback/Submit của hub. Nếu thêm gateway cho Workloop,
+cần thiết kế ánh xạ trạng thái, lưu trữ và phục hồi cho đúng đường kết nối.
+
+Tra [API và credential](/docs/reference/harness-interfaces) cùng
+[contract và bằng chứng](/docs/architecture/tang-3-harness/contract-va-bang-chung).
 
 ## OpenCode SDK
 

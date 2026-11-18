@@ -1,0 +1,92 @@
+---
+title: Kiểm tra kết quả agent
+description: Đối chiếu report, thay đổi mã nguồn, kết quả test và quyết định review trước khi bàn giao.
+sidebar_position: 7
+---
+
+# Kiểm tra kết quả agent
+
+Đọc report của node trong **Runs**, rồi mở tệp hoặc bằng chứng mà report dẫn tới. Câu "đã
+hoàn thành" trong phiên cho biết agent đã trả lời và người dùng cần kiểm tra đầu ra trước khi duyệt
+bước tiếp theo.
+
+## Đối chiếu lượt chạy
+
+Kiểm tra Workloop job ID, node, contract và DSH session ID. Nếu có TestForge, giữ thêm mã job
+broker, suite, target và revision SUT. Report nếu thiếu một định danh thì tìm trong sự kiện
+của node hoặc phiên trước khi kết luận không có kết quả.
+
+| Đầu ra | Cần đọc |
+|---|---|
+| Tài liệu | Nội dung file, đường dẫn và tiêu chí trong brief |
+| Mã nguồn | Diff thực tế, base commit và danh sách file thay đổi |
+| Kiểm thử | Check đã chạy, verdict, log và cấu hình lượt chạy |
+| Hiệu năng | Profile tải, ngưỡng, chỉ số và thời điểm đo |
+| Job dịch vụ | Trạng thái và artifact của đúng mã job |
+
+Report ghi rõ check chưa chạy và nguyên nhân. Khi chỉ kiểm tra được cấu trúc JSON, kết luận
+giới hạn ở cấu trúc JSON; yêu cầu nghiệp vụ vẫn cần test hoặc review tương ứng.
+
+## Kiểm tra patch
+
+Với task sửa mã, đọc diff ở checkout hoặc kho artifact được cấp. Đối chiếu base commit,
+đường dẫn và nội dung thay đổi với phạm vi đã duyệt. Tệp không nằm trong diff vẫn có thể
+xuất hiện trong lời kể của agent, nên cần đọc nguồn thật.
+
+Profile capture Git của ADLC lấy bytes từ checkout riêng, gắn checksum và lưu artifact
+theo attempt. Nếu Workloop dùng gateway TaskLoop thông thường, thu diff theo công cụ/quy
+trình hiện có của factory. Report có URI chưa chứng minh profile capture đã được tích hợp.
+
+Với artifact có checksum, kiểm tra descriptor và bytes khớp nhau. Artifact hết hạn cần ghi
+nhận là không còn tải được; lịch sử kết quả không được thay bằng lượt capture mới. Cơ chế
+profile riêng nằm ở [contract và bằng chứng](/docs/architecture/tang-3-harness/contract-va-bang-chung).
+
+## Kiểm tra test
+
+Report test cần cho biết tên check, revision/candidate đã kiểm tra, kết quả và nơi đọc log.
+Test FAIL giữ nguyên verdict cùng bước lỗi. Nếu sửa test, locator hoặc dữ liệu sau lần FAIL,
+review thay đổi đó trước khi dùng lần PASS sau làm căn cứ bàn giao.
+
+Với TestForge, dùng [quy trình đọc evidence](/docs/user-guides/testforge/quy-trinh-kiem-thu).
+Job `completed` cho biết broker kết thúc xử lý. Đọc kết quả testcase và artifact để biết
+case đạt, trượt hay bị bỏ qua.
+
+Plugin `vai-adlc-verify-structured` kiểm tra envelope/output bắt buộc, chưa chạy unit test.
+Verifier contract execution tham chiếu có predicate về source patch, không thay đổi source
+và cú pháp JSON. Nhãn `TEST` trong criterion không tự biến mô tả tự nhiên thành lệnh
+`pytest` hoặc `npm test`.
+
+## Phê duyệt
+
+Ở Workloop, đọc tiêu chí và bằng chứng trên card **Duyệt**, ghi quyết định cùng lý do. Duyệt
+kế hoạch trước kiểm thử và duyệt kết quả sau kiểm thử là hai bước riêng.
+
+Execution hub ADLC còn phân biệt contract approval, plan acceptance và result submission.
+`READY_FOR_SUBMISSION` là lúc kết quả chờ Submit của profile `MANUAL`; callback gửi thành
+công cũng chưa thay cho cổng kiểm tra và approval ở bộ điều phối. Chỉ dùng các thao tác này
+khi adapter/profile đang chạy hỗ trợ.
+
+Ví dụ, task đã tạo patch nhưng test chưa chạy thì report phải giữ rõ hai sự việc đó. Người
+review có thể yêu cầu bổ sung test hoặc từ chối bàn giao theo tiêu chí workflow.
+
+## Report bàn giao
+
+```text
+Workloop job / node:
+DSH session / TaskLoop contract:
+Nguồn và base revision:
+Đầu ra hoặc artifact:
+Check đã chạy và kết quả:
+Check chưa chạy, nguyên nhân:
+Job dịch vụ và evidence:
+Điểm còn vướng:
+Quyết định review và lý do:
+```
+
+Giữ trường áp dụng cho task, bỏ trường không dùng. Secret chỉ xuất hiện dưới tên ref.
+
+## Kết quả đúng phải thấy
+
+Người review mở được đầu ra và bằng chứng của đúng lượt chạy, biết check nào đã chạy và
+phần nào chưa xác minh. Quyết định duyệt gắn với nội dung đã xem; task còn FAIL, thiếu dữ liệu
+hoặc thiếu evidence không được trình bày thành kết quả đã đạt.

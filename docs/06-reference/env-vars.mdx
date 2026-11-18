@@ -35,12 +35,33 @@ sidebar_position: 4
 
 | Biến | Ý nghĩa |
 |---|---|
-| `DSH_TOKEN` | token điều khiển harness — **đổi sau mỗi restart** |
-| `DSH_BASE_URL` | địa chỉ harness |
+| `DSH_TOKEN` | Token Web UI/SDK DSH; kiểm tra lại sau restart theo deployment |
+| `DSH_BASE_URL` | URL DSH mà SDK Python và các helper có hỗ trợ đọc |
+| `DSH_TIMEOUT` | Timeout request của SDK Python, mặc định 30 giây |
 
 Gateway DSH tham chiếu lấy URL/workspace từ `harness` trong `factory.yaml`, token qua tên biến
 `token_env` (thường là `DSH_TOKEN`). Các biến URL/workspace riêng chỉ có tác dụng khi script
 deployment thực sự đọc chúng. Xem [Kết nối Harness](/docs/user-guides/harness-dsh/cai-dat-ket-noi).
+
+## Profile ADLC trên Harness
+
+Đường tích hợp ADLC dùng API và credential riêng. Gateway TaskLoop của Workloop không tự
+chuyển sang execution hub khi khai báo các biến này.
+
+| Biến/ref | Nơi sử dụng | Ý nghĩa |
+|---|---|---|
+| `ADLC_HARNESS_BASE_URL` | Client ADLC | URL gốc execution hub |
+| `ADLC_HARNESS_API_TOKEN` | ADLC và hub | Bearer control API, khác `DSH_TOKEN` |
+| `ADLC_HARNESS_CALLBACK_URL` | Hub | Callback cố định do deployment cấp |
+| `ADLC_HARNESS_CALLBACK_SECRET` | Hub và receiver ADLC | Secret ký/kiểm tra HMAC callback |
+| `ADLC_HARNESS_SOURCE_REPO` | Compose Harness | Repo nguồn mount chỉ đọc cho capture Git |
+| `ADLC_HARNESS_ITERATION_API_TOKEN` | ADLC và iteration plugin | Bearer riêng cho API chỉ đề xuất file |
+| `ADLC_TASK_LOOP_HARNESS_ENABLED` | Backend ADLC | Opt-in adapter native iteration |
+| `ADLC_CONTRACT_EXECUTION_ENABLED` | Backend ADLC | Opt-in execution theo contract đã duyệt |
+| `ADLC_CONTRACT_RECOVERY_ENABLED` | Backend ADLC | Opt-in profile recovery cùng execution tương ứng |
+
+Flags không thay việc cài plugin, kiểm tra lock và cấu hình profile. Tra
+[giao diện Harness](/docs/reference/harness-interfaces) để chọn API và credential.
 
 ## TestForge
 

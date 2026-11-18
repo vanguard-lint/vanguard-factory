@@ -1,0 +1,95 @@
+---
+title: Phiên và workspace
+description: Tìm đúng phiên DSH, phân biệt thư mục từ xa với máy local và đăng ký workspace qua SDK.
+sidebar_position: 3
+---
+
+# Phiên và workspace
+
+Workspace là thư mục làm việc trên Harness. Session giữ lịch sử trao đổi và hoạt động của
+agent. Khi mở một node trong Workloop, lấy session ID từ report rồi tìm phiên đó trong DSH;
+tên phiên giống nhau chưa đủ để nhận diện.
+
+## Đường dẫn và nơi lưu
+
+| Đường dẫn hoặc nhóm tệp | Nơi lưu |
+|---|---|
+| Workspace DSH trong container | Ví dụ `/app/workspace/docs-demo`, do deployment mount |
+| Brief, TaskLoop contract và report | Workspace mà task sử dụng |
+| Checkout riêng của profile capture Git | Thư mục do plugin cấp cho session |
+| Suite/profile TestForge | Máy hoặc container broker/runner, tùy deployment |
+| Tệp tải về máy người dùng | Máy đang mở trình duyệt hoặc chạy SDK |
+
+Đường dẫn `/app/workspace/docs-demo` chỉ minh họa bố cục container. Đường dẫn thực tế do admin
+cấp. Tạo thư mục cùng tên trên laptop không làm nó xuất hiện trong container Harness.
+
+Volume cần giữ cả dữ liệu phiên và workspace. Deployment tham chiếu mount `/app/data` và
+`/app/workspace` cho phép ghi; mã plugin được mount chỉ đọc. Plugin capture Git còn dùng
+source mount chỉ đọc và checkout riêng cho agent.
+
+## Tìm phiên từ Workloop
+
+1. Mở **Runs**, chọn đúng job và node.
+2. Lấy session ID, contract `n` và workspace từ report hoặc sự kiện.
+3. Mở DSH, tìm phiên theo ID. Đối chiếu thư mục và mốc thời gian trước khi đọc tool call.
+4. Nếu task gọi dịch vụ khác, lấy mã job trong report và tra tại dịch vụ đó.
+
+Phiên do gateway quản lý cần được điều khiển qua Workloop. Gửi thêm prompt trực tiếp có thể
+thay đổi công việc đang chạy mà gateway chưa biết.
+
+## Đăng ký workspace qua SDK
+
+Trong `dsh_web_sdk`, tạo session chỉ với `cwd` chưa gắn phiên vào nhóm workspace trên Web UI.
+`create_session_for_workspace` đăng ký workspace rồi tạo phiên trong nhóm đó.
+
+Ví dụ cần SDK từ source Harness, `DSH_BASE_URL` và `DSH_TOKEN` đã cấu hình. Tạo phiên ghi dữ
+liệu session lên server, chưa gửi prompt:
+
+```python
+import asyncio
+from dsh_web_sdk import DshClient
+
+
+async def main():
+    async with DshClient() as client:
+        session = await client.create_session_for_workspace(
+            "/app/workspace/docs-demo"
+        )
+        print(session.session_id)
+
+
+asyncio.run(main())
+```
+
+`session_for_workspace(path)` tìm phiên có `cwd` khớp rồi tái sử dụng; nếu chưa có thì tạo.
+`create_session_for_workspace(path)` tạo phiên mới, hoặc gắn phiên đã có khi truyền
+`session_id`. SDK không nhận đồng thời `cwd` và `workspace_id` trong `create_session`.
+
+SDK mặc định `local_fs=False`, nên đường dẫn workspace được xử lý phía server. Một số helper
+khác, như `create_project`, vẫn tạo thư mục bằng filesystem của máy chạy SDK. Khi làm việc
+từ xa, dùng các hàm workspace nêu trên và kiểm tra chức năng trước khi gọi.
+
+## Tái sử dụng phiên
+
+Với task Workloop, gateway quyết định re-arm hoặc thay phiên. Khi stall, gateway có thể tiếp
+tục trên phiên cũ để giữ ngữ cảnh. Profile iteration của ADLC lại yêu cầu phiên mới cho từng
+vòng, khóa tool và chỉ nhận đề xuất file. Hai chính sách phục vụ hai luồng khác nhau;
+xem [TaskLoop contract](/docs/user-guides/harness-dsh/taskloop-contract).
+
+Trước khi dùng lại phiên, đối chiếu contract, đề bài và đầu ra đang chờ xử lý. Giữ lịch sử
+phiên cũ khi cần review hoặc đối soát sự cố.
+
+## Lỗi thường gặp
+
+| Hiện tượng | Kiểm tra |
+|---|---|
+| Phiên nằm trong `Ungrouped` | Có tạo bằng `cwd` thay vì đăng ký workspace không? |
+| Agent không thấy file local | File đã có trên Harness hoặc được đồng bộ qua VFS chưa? |
+| Có report nhưng không mở được đường dẫn | Report nằm trên Harness, broker hay máy chạy SDK? |
+| Mở đúng tên nhưng sai task | Đối chiếu session ID và contract |
+| Sau restart mất lịch sử | Kiểm tra mount dữ liệu và workspace của deployment |
+
+## Kết quả đúng phải thấy
+
+Phiên xuất hiện dưới đúng workspace, session ID khớp report Workloop, brief và đầu ra nằm
+trong thư mục đã cấp. Sau khi reconnect, vẫn truy được lịch sử và ID của lượt chạy.

@@ -1,0 +1,98 @@
+---
+title: TaskLoop contract
+description: Theo dõi contract file của vai-taskloop; phân biệt với vòng lặp kiểm chứng và hợp đồng đặc tả.
+sidebar_position: 5
+---
+
+# TaskLoop contract
+
+TaskLoop của gateway DSH dùng file JSON để theo dõi tiến độ task. SDK tạo contract và brief
+trên server trước khi gửi prompt; agent đọc task, cập nhật trạng thái qua tool rồi ghi report.
+Gateway đọc contract để biết task đã kết thúc hay cần can thiệp.
+
+## Các file của một task
+
+| File trong workspace thử nghiệm | Nội dung |
+|---|---|
+| `taskloop/task-1.task.json` | ID, trạng thái và đường dẫn brief/report |
+| `docs/plans/task-1-brief.md` | Đề bài và tiêu chí đầu ra |
+| `reports/task-1-report.md` | Kết quả, bằng chứng và phần còn vướng |
+
+Contract `n` có phạm vi theo workspace. Gateway có thể tạo ID từ workflow, node và lần chạy;
+SDK cũng hỗ trợ số thứ tự. Giữ cả workspace và `n` khi tra cứu.
+
+Ví dụ payload theo `TaskContract` của SDK:
+
+```json
+{
+  "n": "1",
+  "name": "Kiểm tra liên kết tài liệu",
+  "model": "model-da-duyet",
+  "brief": "docs/plans/task-1-brief.md",
+  "dir": "/app/workspace/docs-demo",
+  "report": "reports/task-1-report.md",
+  "ctx": "Chỉ kiểm tra tài liệu trong workspace thử nghiệm.",
+  "status": "PENDING",
+  "comments": []
+}
+```
+
+Đổi model và thư mục theo deployment. `ctx` mô tả ngữ cảnh; quyền đọc/ghi thực tế do runtime
+và công cụ kiểm soát.
+
+## Trạng thái
+
+| Trạng thái | SDK chờ tiếp? | Cách xử lý |
+|---|---|---|
+| `PENDING` | Có | Kiểm tra task đã được giao cho phiên chưa |
+| `IN_PROGRESS` | Có | Theo dõi tiến độ, tool call và thời gian |
+| `DONE` | Không | Đọc report, kiểm tra đầu ra và gate |
+| `DONE_WITH_CONCERNS` | Không | Đọc lưu ý; gate Workloop chỉ nhận `DONE` sẽ chặn |
+| `BLOCKED` | Không | Xử lý nguyên nhân chặn trước khi tiếp tục |
+| `NEEDS_CONTEXT` | Không | Bổ sung dữ liệu hoặc quyết định còn thiếu |
+
+`wait_task_done` dừng chờ ở cả bốn trạng thái cuối. Hàm trả về chưa có nghĩa công việc đã đạt.
+Khi hết thời gian chờ, SDK có thể trả `timeout: true` cùng trạng thái quan sát cuối; kiểm tra
+trường này trước khi xử lý kết quả.
+
+File contract là nơi SDK, plugin và biểu mẫu TaskLoop cùng đọc/ghi. `DONE` là tín hiệu tiến
+độ, chưa phải bằng chứng kiểm thử độc lập hay quyết định phê duyệt.
+
+## Tạo task qua SDK
+
+`client.create_task(workspace, contract, brief_text=...)` tạo contract cùng brief, trả prompt
+do plugin render. Store tạo mới; trùng ID có thể trả 409. Đọc task cũ trước khi chọn ID khác,
+nhất là sau lỗi mạng.
+
+`client.run_contract_task(...)` gộp tạo task, chuẩn bị phiên, gửi prompt và chờ contract.
+Hàm này chạy agent thật khi kết nối tới provider thật. Muốn chỉ kiểm tra danh sách, dùng
+`list_tasks` hoặc `get_task`.
+
+Brief phải là đường dẫn tương đối nằm trong workspace. Cấu hình đường dẫn đúng phía server;
+đừng gửi đường dẫn tuyệt đối trên laptop vào Harness từ xa.
+
+## Bổ sung ngữ cảnh
+
+Task do Workloop quản lý được xử lý qua card hoặc thao tác mà gateway cung cấp. Người vận
+hành SDK riêng có thể dùng `update_task` thêm comment rồi chuyển về `IN_PROGRESS` khi đã
+giải quyết nguyên nhân dừng. Kiểm tra đúng contract và phiên trước khi làm; cập nhật trạng
+thái có thể đánh thức agent và tạo thêm model call.
+
+## Các loại vòng lặp
+
+| Cơ chế | Phần được theo dõi hoặc kiểm tra |
+|---|---|
+| `vai-taskloop` | Tiến độ qua file contract, brief và report |
+| Re-arm của gateway Workloop | Phiên stall, timeout, ngân sách và số lần thử |
+| Task Loop kiểm chứng trong ADLC | Candidate tích lũy, protected checks và giới hạn iteration |
+| Contract đặc tả đã duyệt | Revision yêu cầu, phạm vi ghi và predicate của profile execution |
+
+Profile ADLC `vai-adlc-task-loop` chỉ nhận đề xuất file từ phiên native mới, khóa tool và để
+ADLC chạy kiểm tra. Nó có giao thức riêng; xem [giao diện Harness](/docs/reference/harness-interfaces)
+trước khi áp dụng cách resume của TaskLoop file cho một profile khác.
+
+## Kết quả đúng phải thấy
+
+Contract tồn tại trước prompt, brief đọc được trên Harness và report khớp ID task. Gateway
+nhận đúng trạng thái terminal; kết quả chỉ được bàn giao sau khi đầu ra và review đáp ứng
+workflow. Timeout hoặc `NEEDS_CONTEXT` được giữ nguyên để xử lý tiếp.

@@ -4,7 +4,7 @@ description: Ranh giới Workloop, phiên agent DSH, TaskLoop, vault và các pl
 sidebar_position: 1
 ---
 
-# Tầng 3 · Harness — môi trường làm việc của agent
+# Tầng 3 · Harness
 
 Harness cung cấp phiên agent, model, công cụ, workspace, TaskLoop và secret. **Workloop điều phối
 công việc; Harness thực thi từng task.** Người dùng theo dõi workflow và duyệt tại dashboard
@@ -38,6 +38,19 @@ Plugin được nạp trong runtime DSH. Kết nối tới backend phụ thuộc
 Agent Memory dùng MCP; gateway Workloop dùng SDK/RPC của DSH. Không coi tất cả kết nối là một
 REST API chung hoặc dùng chung token.
 
+## Các cách tích hợp
+
+| Cách dùng | Bên giữ trạng thái công việc | Phần Harness cung cấp |
+|---|---|---|
+| Workloop qua gateway DSH | Engine DAG, job và gate Workloop | Session, TaskLoop contract, tool và report |
+| ADLC qua execution hub | Coordinator và attempt ledger ADLC | API có bearer, interaction, verifier, artifact và signed outbox |
+| ADLC qua native iteration | Task Loop kernel ADLC | Một phiên mới chỉ đề xuất file cho mỗi vòng |
+
+Các đường này có mặt trong source nhưng dùng giao thức và credential riêng. Phần mở rộng
+ADLC không tự được kích hoạt trong Workloop khi cài DSH. Cách chọn API nằm ở
+[giao diện Harness](/docs/reference/harness-interfaces); capture, proof và recovery nằm ở
+[contract và bằng chứng](/docs/architecture/tang-3-harness/contract-va-bang-chung).
+
 ## Từ một node Workloop đến một phiên agent
 
 1. Workloop đọc `role`, brief, model và giới hạn thực thi trong spec/factory.
@@ -56,9 +69,10 @@ Contract thể hiện tiến độ nhiệm vụ:
 
 `PENDING → IN_PROGRESS → DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT`.
 
-`DONE` cho biết agent đã hoàn thành hợp đồng task. Testcase FAIL, lỗi broker và yêu cầu chờ
-con người vẫn cần được ghi riêng trong report. Workloop có các trạng thái job và cổng duyệt
-riêng; xem [Trạng thái](/docs/reference/trang-thai).
+Với `vai-taskloop`, agent cập nhật file contract qua tool. `DONE` là tín hiệu tiến độ mà
+gateway quan sát, chưa thay cho kiểm thử độc lập. SDK cũng dừng chờ ở `BLOCKED` và
+`NEEDS_CONTEXT`. Workloop cần đọc kết quả từng node và áp dụng gate riêng;
+xem [TaskLoop contract](/docs/user-guides/harness-dsh/taskloop-contract).
 
 Gateway có cơ chế phát hiện stall và re-arm theo ngân sách. Task tạo job từ xa cần lưu job ID
 để đối soát trước khi thử lại; mở phiên agent mới không làm job TestForge cũ tự dừng.
@@ -90,6 +104,8 @@ trong Sandbox Kit. Vị trí runner và môi trường SUT cần xác nhận the
 
 - [Cài đặt và kết nối Harness](/docs/user-guides/harness-dsh/cai-dat-ket-noi).
 - [Vận hành Harness từ Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop).
+- [Kiểm tra patch, test và report](/docs/user-guides/harness-dsh/kiem-tra-ket-qua).
+- [Phục hồi và xử lý sự cố](/docs/user-guides/harness-dsh/phuc-hoi-va-xu-ly-su-co).
 - [Đưa kiểm thử TestForge vào workflow](/docs/user-guides/testforge/tich-hop-workloop).
 - [Nạp tri thức dự án vào Agent Memory](/docs/user-guides/agent-memory-cognee/gioi-thieu).
 

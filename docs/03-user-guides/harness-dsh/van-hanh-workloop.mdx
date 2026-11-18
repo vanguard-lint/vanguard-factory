@@ -1,7 +1,7 @@
 ---
 title: Vận hành Harness từ Workloop
 description: Chọn workflow, theo dõi contract/session, duyệt HITL và đối soát công việc sau gián đoạn.
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 # Vận hành Harness từ Workloop
@@ -9,7 +9,7 @@ sidebar_position: 3
 Trang này dùng **dashboard Workloop trên desktop** làm điểm theo dõi chính. Điều kiện trước:
 [kết nối gateway DSH](/docs/user-guides/harness-dsh/cai-dat-ket-noi) đã qua smoke test.
 
-## 1 · Kiểm tra workflow trước khi chạy
+## Kiểm tra workflow trước khi chạy
 
 Trong **Factory**, xác định workflow và phiên bản/SHA vừa sync. Sang **Workloop** để xem DAG,
 role, brief và phụ thuộc. Kiểm tra workspace, model, giới hạn thời gian/re-arm và các điểm cần
@@ -19,7 +19,7 @@ Chạy bằng MCP `run_workflow` hoặc REST theo
 [Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc). Lưu `job_id` ngay khi nhận được.
 Đây là **Workloop job ID**, chưa phải mã job của một tool như TestForge.
 
-## 2 · Theo dõi ở Runs
+## Theo dõi ở Runs
 
 | Cần biết | Đọc ở đâu | Cần đối chiếu |
 |---|---|---|
@@ -34,7 +34,7 @@ của từng node. Mở đúng session trong DSH khi cần xem tool call, lỗi 
 tiết. Không gửi thêm prompt thủ công vào phiên đang được gateway điều khiển vì có thể làm sai
 brief và trạng thái task.
 
-## 3 · Đọc đúng các lớp trạng thái
+## Đọc đúng các lớp trạng thái
 
 | Quan sát | Có thể kết luận | Còn phải kiểm tra |
 |---|---|---|
@@ -44,10 +44,11 @@ brief và trạng thái task.
 | TestForge job `completed` | Job kiểm thử kết thúc | Assertion, số case, exit code và verdict |
 | Testcase `PASS` | Case đạt với cấu hình lần chạy đó | Đúng suite/target/revision; tiêu chí còn lại |
 
-Node bị thiếu ngữ cảnh nên trả `NEEDS_CONTEXT`; lỗi kết nối hoặc testcase chưa đạt cần được ghi
-rõ trong report. Không chuyển lỗi thành `DONE` chỉ để DAG chạy tiếp.
+SDK TaskLoop dừng chờ ở cả `DONE`, `DONE_WITH_CONCERNS`, `BLOCKED` và `NEEDS_CONTEXT`.
+Đọc trạng thái trả về cùng report trước khi kết luận node đạt. Lỗi kết nối hoặc testcase
+chưa đạt cần được ghi rõ; không chuyển lỗi thành `DONE` để DAG chạy tiếp.
 
-## 4 · Duyệt HITL
+## Duyệt HITL
 
 Khi task có `need_review: human` hoặc cổng review tương ứng, mở tab **Duyệt** và đọc nội dung
 card. Với TestForge, kiểm tra ít nhất phạm vi chức năng, dữ liệu, target và tác động ghi/xóa
@@ -57,7 +58,7 @@ Ghi lý do khi duyệt, yêu cầu sửa hoặc từ chối. Duyệt kế hoạc
 quyết định ở hai thời điểm. Nếu agent hỏi thêm trong phiên DSH, xử lý theo tương tác mà gateway
 đang expose; không coi một câu xác nhận trong chat khác là quyết định cho card Workloop.
 
-## 5 · PAUSE, STOP và resume
+## PAUSE, STOP và resume
 
 | Thao tác | Dùng khi | Lưu ý |
 |---|---|---|
@@ -80,14 +81,24 @@ TestForge, đọc lại bằng `testforge_result` trước khi quyết định t
 
 Chỉ ghi tên ref trong brief. Không yêu cầu agent in secret để kiểm tra kết nối.
 
-## Kết quả đúng phải thấy
+## Kiểm tra và phục hồi
 
-Report có node/Workloop job ID, session ID, trạng thái TaskLoop, tệp/commit đầu ra, các test
-đã chạy và hạn chế còn lại. Với TestForge bổ sung job ID dịch vụ, target, revision SUT,
-suite/profile, số case PASS/FAIL/SKIP và đường dẫn evidence. Nếu không có dữ liệu nào thì ghi
-"chưa xác minh" cùng nguyên nhân.
+Trước bàn giao, [kiểm tra kết quả](/docs/user-guides/harness-dsh/kiem-tra-ket-qua) của đúng
+node và revision. Nếu mất kết nối hoặc report chưa rõ, đối soát theo
+[hướng dẫn phục hồi](/docs/user-guides/harness-dsh/phuc-hoi-va-xu-ly-su-co) trước khi chạy mới.
 
-Sau review, Workloop giữ quyết định và lý do tương ứng. Có thể truy từ node tới đúng phiên
-Harness và mã job dịch vụ mà không chạy lại công việc chỉ để lấy kết quả.
+Các trạng thái REST như `WAITING_INTERACTION` hoặc `READY_FOR_SUBMISSION` thuộc profile
+execution hub riêng của ADLC. Chúng không thay thế trạng thái TaskLoop hay card Duyệt
+của Workloop; xem [giao diện Harness](/docs/reference/harness-interfaces).
 
 Tiếp theo: [Workflow hồi quy với TestForge](/docs/user-guides/testforge/tich-hop-workloop).
+
+## Kết quả đúng phải thấy
+
+Report có node/Workloop job ID, session ID, trạng thái TaskLoop, tệp/commit đầu ra, test đã
+chạy và hạn chế còn lại. Với TestForge, bổ sung job ID dịch vụ, target, revision SUT,
+suite/profile, số case PASS/FAIL/SKIP và evidence. Dữ liệu chưa có được ghi "chưa xác minh"
+cùng nguyên nhân.
+
+Sau review, Workloop giữ quyết định và lý do. Từ node, truy được phiên Harness và job dịch
+vụ để đọc kết quả cũ.

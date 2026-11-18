@@ -1,0 +1,89 @@
+---
+title: Phục hồi và xử lý sự cố Harness
+description: Chẩn đoán theo lớp kết nối, giữ định danh task và đối soát kết quả trước khi chạy lại.
+sidebar_position: 8
+---
+
+# Phục hồi và xử lý sự cố Harness
+
+Trước khi chạy lại, lưu job/node, contract `n`, workspace và DSH session ID. Nếu task đã gọi
+TestForge hoặc tạo sandbox, giữ cả mã job/phiên dịch vụ. Lỗi chờ phản hồi có thể xảy ra
+sau khi server đã nhận công việc.
+
+## Chẩn đoán theo triệu chứng
+
+| Hiện tượng | Kiểm tra trước | Bước xử lý |
+|---|---|---|
+| Backend không tới được Harness | DNS, port và kết nối từ container Workloop | Đối chiếu endpoint; kiểm tra routing hiện có |
+| SDK/Web UI trả 401 sau restart | Token DSH đang dùng | Cập nhật nguồn `DSH_TOKEN`, đăng nhập lại theo runbook |
+| Hub trả `HARNESS_API_NOT_CONFIGURED` | `ADLC_HARNESS_API_TOKEN` phía hub | Cấu hình bearer hub; token Web UI không thay thế được |
+| Model unavailable hoặc lỗi provider | Route, model ID, credential và profile | Sửa cấu hình đúng provider, giữ lỗi và usage đã biết |
+| Model báo 429 | Quota/backoff của provider và runtime | Theo dõi retry đã cấu hình, tránh gửi thêm prompt thủ công |
+| Package có nhưng agent không có tool | Profile, `patch.yml`, service dependency | Xem loader/inventory và entry point |
+| Digest/version mismatch | Bytes cài đặt so với plugin lock | Khôi phục đúng release hoặc phát hành version mới |
+| File không tồn tại | File thuộc Harness hay broker | Kiểm tra mount/workspace và bước đồng bộ |
+| Tạo contract trả 409 | Contract cũ đã được tạo chưa | Đọc đúng workspace và `n` trước khi tạo task khác |
+| Session idle, task còn `IN_PROGRESS` | Contract, report và tool call cuối | Kiểm tra cập nhật trạng thái; để gateway xử lý re-arm |
+| Thiếu report sau trạng thái terminal | Đường dẫn report và output | Bổ sung bằng chứng trước bàn giao |
+
+Nếu dịch vụ nội bộ còn truy cập được nhưng provider hoặc dịch vụ ngoài mạng timeout, kiểm
+tra connectivity/routing trước khi đổi credential. Giữ cấu hình VPN và mạng của deployment.
+
+## Timeout khi gửi hoặc chờ task
+
+Sau lỗi mạng, đọc contract/session trước. Nếu task đã có và agent đang chạy, tiếp tục quan
+sát lượt đó. Nếu đã terminal, lấy report. Chỉ tạo attempt mới khi đã xác định lượt cũ không
+thể tiếp tục hoặc có quyết định chạy lại.
+
+SDK retry một số lỗi transport và HTTP tạm thời; không thể suy ra mọi thao tác ghi đều
+idempotent. Sau lỗi gửi prompt không rõ đã được nhận hay chưa, lưu lỗi và đối soát phía
+server. Gateway Workloop có chính sách submit/re-arm riêng;
+xem [SDK và gateway](/docs/developer-docs/sdk-gateway).
+
+Hết thời gian polling, đóng tab hoặc mất kết nối SDK không tự hủy agent. STOP Workloop
+cũng chưa xác nhận job TestForge đã dừng. Dùng trạng thái và cơ chế cancel của đúng backend.
+
+## Khởi động lại dịch vụ
+
+Kiểm tra volume và lưu trữ runtime trước khi restart. Với DSH, cần giữ dữ liệu phiên và
+workspace; plugin có thể có store hoặc journal riêng. Sau restart, xác nhận token,
+inventory và kết quả của task đang dở.
+
+Runtime lưu được kết quả cuối chưa chắc resume được lượt model đang chạy. Chính sách
+phục hồi phụ thuộc profile:
+
+| Profile | Hành vi cần giữ |
+|---|---|
+| Workloop qua TaskLoop | Đọc contract, session và checkpoint engine; resume theo runbook Workloop |
+| Hub có signed callback | Đối soát attempt/outbox gốc; khử callback trùng theo định danh |
+| Contract recovery H5D | Tái dùng đúng checkpoint/proof, không gọi lại model hoặc capture patch khác |
+| Native iteration ADLC | Lượt dở chưa xác nhận có thể thành `INTERRUPTED`, `released:false`; không tự tạo phiên thay thế |
+
+## Verification chờ đối soát
+
+Phần này chỉ áp dụng profile `vai-adlc-contract-recovery` đã bật và kiểm tra lock. Nếu
+session giữ `VERIFYING` với sự kiện `execution.reconciliation_waiting`, khôi phục kết nối
+bridge rồi dùng thao tác recovery của adapter. Thao tác này đối soát checkpoint cũ, chưa
+Submit kết quả.
+
+Checkpoint thiếu, hỏng, khác binding/proof hoặc patch hết hạn là lỗi cần điều tra. Giữ
+bằng chứng và chọn attempt mới qua bộ điều phối khi cần. Không sửa DB, reset proof hay
+lấy patch mới để làm khớp quyết định cũ.
+
+Recovery thành công vẫn chờ review/Submit ở profile `MANUAL`. Nếu mất ledger của lượt model
+đang dở, việc sửa trạng thái không khôi phục được lượt đó.
+
+## Thông tin chuyển cho người vận hành
+
+Gửi thời điểm lỗi, job/node, contract/session, profile/model, revision nguồn, mã lỗi đã lọc
+secret và ID dịch vụ liên quan. Ghi rõ thao tác gần nhất là đọc trạng thái, gửi prompt,
+Submit hay cancel, cùng kết quả đã biết phía server.
+
+Với TestForge, dùng thêm [xử lý sự cố tích hợp](/docs/user-guides/testforge/xu-ly-su-co).
+Giới hạn profile nằm ở [giao diện Harness](/docs/reference/harness-interfaces).
+
+## Kết quả đúng phải thấy
+
+Đã xác định lớp phát sinh lỗi và kết quả lượt cũ. Khi tiếp tục, bộ điều phối dùng lại đúng
+định danh được hỗ trợ; khi chạy mới, attempt mới có lịch sử riêng. Kết luận "đã hủy", "đã
+phục hồi" hoặc "đã đạt" có xác nhận tương ứng từ backend và bằng chứng.

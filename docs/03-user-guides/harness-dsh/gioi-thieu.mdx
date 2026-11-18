@@ -1,10 +1,10 @@
 ---
-title: Harness (DSH) — hướng dẫn sử dụng
+title: Sử dụng Harness (DSH)
 description: Bắt đầu với Harness DSH, kết nối Workloop và theo dõi phiên agent cùng kết quả kiểm thử.
 sidebar_position: 1
 ---
 
-# Harness (DSH) — hướng dẫn sử dụng
+# Sử dụng Harness (DSH)
 
 Harness (DSH) là nơi agent thực thi task: nhận brief, dùng model/công cụ, làm việc trong
 workspace và trả report. Với công việc theo workflow, điểm bắt đầu là **dashboard Workloop**.
@@ -13,11 +13,12 @@ Bạn chọn workflow, theo dõi ở **Runs** và xử lý các điểm cần ng
 Giao diện DSH dùng để quản trị model, plugin, secret và kiểm tra chi tiết phiên. Kiến trúc:
 [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness).
 
-:::note[Bản hướng dẫn chờ nghiệm thu môi trường]
+:::note[Chọn đúng cách tích hợp]
 
-Nội dung được đối chiếu gateway Workloop và mã plugin hiện có. Địa chỉ, phiên bản triển khai
-và quyền truy cập cần được quản trị viên xác nhận. Hướng dẫn không đồng nghĩa với việc đã chạy
-một workflow TestForge mới trên môi trường của bạn.
+Workloop dùng gateway DSH và TaskLoop contract. Mã ADLC còn có execution hub REST, contract
+đã duyệt và vòng lặp kiểm chứng riêng. Các profile này dùng API/credential khác nhau và
+không tự xuất hiện trong Workloop khi cài DSH. Đối chiếu
+[giao diện Harness](/docs/reference/harness-interfaces) trước khi dùng một profile mới.
 
 :::
 
@@ -26,7 +27,12 @@ một workflow TestForge mới trên môi trường của bạn.
 | Bạn cần | Đọc |
 |---|---|
 | Chuẩn bị Harness hoặc nối Workloop với DSH | [Cài đặt và kết nối](/docs/user-guides/harness-dsh/cai-dat-ket-noi) |
+| Tìm phiên, chọn thư mục và đăng ký workspace | [Phiên và workspace](/docs/user-guides/harness-dsh/phien-va-workspace) |
+| Chọn model, nạp plugin và cấp credential | [Model, plugin và secret](/docs/user-guides/harness-dsh/model-plugin-secret) |
+| Đọc brief, report và trạng thái task | [TaskLoop contract](/docs/user-guides/harness-dsh/taskloop-contract) |
 | Chạy task, xem session, xử lý chờ duyệt | [Vận hành từ Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop) |
+| Review patch, test và bằng chứng | [Kiểm tra kết quả](/docs/user-guides/harness-dsh/kiem-tra-ket-qua) |
+| Xử lý timeout hoặc đối soát sau restart | [Phục hồi và xử lý sự cố](/docs/user-guides/harness-dsh/phuc-hoi-va-xu-ly-su-co) |
 | Cấp TestForge cho agent | [Kết nối plugin TestForge](/docs/user-guides/testforge/cai-dat-ket-noi) |
 | Thêm kiểm thử vào DAG | [Tích hợp TestForge vào Workloop](/docs/user-guides/testforge/tich-hop-workloop) |
 
@@ -34,23 +40,13 @@ một workflow TestForge mới trên môi trường của bạn.
 
 | Khái niệm | Ý nghĩa |
 |---|---|
-| **Workloop job** | Một lần chạy DAG, có các node và lịch sử sự kiện riêng |
-| **Session** | Phiên agent của một task/attempt; dùng session ID để tra cứu trong DSH |
-| **Workspace** | Không gian tệp trên host/container Harness; không mặc nhiên là thư mục trên máy người dùng |
-| **TaskLoop contract** | Hợp đồng tiến độ nhiệm vụ; gateway dùng để xác định node đã kết thúc |
-| **Plugin** | Gói đăng ký tool; có thể gọi backend bên ngoài như TestForge broker |
-| **Vault** | Nơi runtime lấy secret theo tên ref |
-| **HITL** | Điểm cần con người quyết định, thường xử lý qua card duyệt Workloop |
-
-## Kết quả đúng phải thấy
-
-1. Workloop thấy đúng workflow và SHA sau sync.
-2. Workflow một node chạy được qua gateway DSH; model/provider khớp cấu hình.
-3. Report chứa session ID và trạng thái contract; tệp đầu ra thực sự tồn tại.
-4. Với TestForge, report còn có **TestForge job ID** và bằng chứng của đúng SUT/suite.
-
-Health đạt xác nhận một dịch vụ có phản hồi. Để kết luận công việc đạt, cần đọc report,
-kiểm tra đầu ra và hoàn thành review theo workflow.
+| Workloop job | Một lần chạy DAG, có các node và lịch sử sự kiện riêng |
+| Session | Phiên agent của task/attempt; dùng session ID để tra cứu trong DSH |
+| Workspace | Không gian tệp trên Harness, có thể khác filesystem máy người dùng |
+| TaskLoop contract | File theo dõi tiến độ; gateway đọc để xác định trạng thái task |
+| Plugin | Gói đăng ký năng lực; có thể gọi backend như TestForge broker |
+| Vault | Nơi runtime lấy secret theo tên ref |
+| HITL | Điểm cần con người quyết định trong luồng đang chạy |
 
 ## Điểm vào giao diện
 
@@ -70,3 +66,12 @@ trong công cụ quản lý secret. Không dán token vào brief, ảnh chụp h
 - Kiến trúc: [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness)
 - Trạng thái task: [Trạng thái](/docs/reference/trang-thai)
 - Xử cố liên quan token: [Xử cố](/docs/user-guides/workloop-dieu-phoi/xu-co)
+
+## Kết quả đúng phải thấy
+
+Workloop thấy workflow và SHA sau sync. Workflow thử một node chạy qua gateway DSH, dùng
+đúng model/provider và trả report có session ID, trạng thái contract cùng đầu ra đọc được.
+Với TestForge, report giữ thêm mã job broker và bằng chứng của đúng SUT/suite.
+
+Health đạt chỉ xác nhận một phần kết nối. Để bàn giao task, cần đọc đầu ra và hoàn thành
+review theo workflow.

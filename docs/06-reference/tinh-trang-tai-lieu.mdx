@@ -31,6 +31,7 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | Tầng 1 — Interface | 🟢 Published | Nhóm điều phối |
 | Tầng 2 — Workflow | 🟢 Published | Nhóm điều phối |
 | Tầng 3 — Harness (tổng quan) | 🟡 Draft bổ sung ranh giới Workloop/plugin, chờ review | Nhóm harness |
+| Tầng 3 — Contract và bằng chứng thực thi | 🟡 Draft đối chiếu source ADLC, tách rõ phạm vi Workloop | Nhóm harness |
 | Tầng 3 — Agent Memory | 🟡 Draft bổ sung triển khai + linh hoạt DB/LLM, chờ review | *đang cập nhật* |
 | Tầng 3 — TestForge | 🟡 Draft bổ sung luồng broker/Workloop, chờ review | Nguyễn Hữu Quân / Nhóm harness |
 | Tầng 4 — Sandbox | 🟢 Published | Nguyễn Trung Kiên |
@@ -50,7 +51,7 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | Workloop — gọi tool MCP | 🟢 Published | *đang cập nhật* |
 | Workloop — dashboard | 🟢 Published | *đang cập nhật* |
 | Workloop — xử cố | 🟢 Published | *đang cập nhật* |
-| Harness — giới thiệu, cài đặt/kết nối, vận hành từ Workloop | 🟡 Draft (3 trang), chờ review và smoke test môi trường | Nhóm harness |
+| Harness — giới thiệu, kết nối, workspace, cấu hình, TaskLoop, Workloop, kết quả, sự cố | 🟡 Draft (8 trang), đã đối chiếu mã nguồn ngày 18/11/2026, chờ review và smoke test môi trường | Nhóm harness |
 | Agent Memory (Cognee) | 🟡 Draft (5 trang: kết nối, nạp, tra cứu, TestForge), chờ review | *đang cập nhật* |
 | TestForge — giới thiệu, kết nối, quy trình, Workloop, xử lý sự cố | 🟡 Draft (5 trang + mẫu spec/persona), chờ nghiệm thu E2E | Nguyễn Hữu Quân / Nhóm harness |
 | Sandbox Kit | 🟡 Draft (thiếu cài đặt chi tiết) | Nguyễn Trung Kiên |
@@ -75,7 +76,7 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | Cấu trúc repo | 🟢 Published | Nhóm điều phối |
 | Viết workflow spec | 🟢 Published | Nhóm điều phối |
 | Viết agent persona & brief | 🟢 Published | Nhóm điều phối |
-| Viết plugin | 🟡 Draft (chờ khung kỹ thuật) | Nhóm harness |
+| Viết plugin | 🟡 Draft có khung ES module, service, profile và lock; chờ review | Nhóm harness |
 | SDK & Gateway | 🟢 Published | Nhóm điều phối |
 | Kiểm thử | 🟢 Published | Nhóm điều phối |
 | Đóng góp | 🟢 Published | Nhóm điều phối |
@@ -89,6 +90,7 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | Spec DSL | 🟢 Published | Nhóm điều phối |
 | Env vars | 🟢 Published | Nhóm điều phối |
 | Trạng thái | 🟢 Published | Nhóm điều phối |
+| Giao diện và phạm vi Harness | 🟡 Draft, ma trận gateway/SDK/hub/iteration và nguồn đối chiếu | Nhóm harness |
 | Ma trận năng lực | 🟢 Published | Nhóm điều phối |
 | Thuật ngữ | 🟢 Published | Nhóm điều phối |
 | FAQ | 🟡 Draft | Nhóm điều phối |
@@ -102,6 +104,8 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 - [x] Ảnh chụp dashboard cho trang giao diện — đã nhúng 3 ảnh (`workloop-dashboard-tong-quan/dag/duyet.jpeg`)
 - [ ] Điền tên người phụ trách cho 3 mảng: Điều phối, Harness, Agent Memory
 - [x] Harness: bổ sung HDSD kết nối và vận hành từ Workloop
+- [x] Harness: bổ sung workspace, model/plugin/secret, TaskLoop, đọc kết quả và xử lý sự cố
+- [x] Harness: đối chiếu API/credential và artifact/verification/recovery với source ADLC
 - [x] TestForge: bổ sung kết nối, quy trình, workflow mẫu và xử lý sự cố
 - [ ] Review và nghiệm thu smoke test Harness, suite TestForge trên Workloop theo bản bổ sung 17/11/2026
 - [x] Agent Memory: điền nội dung HDSD theo template chuẩn (5 trang)
@@ -122,3 +126,18 @@ Nguồn triển khai do admin cấp, không đưa URL nội bộ thật vào b�
 cần xác nhận lại phiên bản triển khai, health, đăng nhập SUT và lượt test E2E trước khi chuyển
 các trang bổ sung sang Published.
 
+## Bản bổ sung Harness ngày 18/11/2026
+
+Trang giới thiệu và kiến trúc Harness public đã có nội dung của bộ ba HDSD trước. Lần rà này
+mở rộng thành tám trang thao tác, bổ sung kiến trúc contract/evidence, khung plugin và API
+reference. Giữ trạng thái Draft cho tới khi review và kiểm tra đúng deployment.
+
+| Nguồn | Mốc đối chiếu | Nội dung |
+|---|---|---|
+| Repository tài liệu | HEAD `1a87e63` trước chỉnh sửa | Ba trang Harness và bản căn chỉnh TestForge |
+| Source ADLC | HEAD `e3f96e1` cùng file local đã đọc | SDK Python, typed model/client và ADR/milestone Harness |
+| Checkout triển khai Harness | HEAD `1ce7de9`, có thay đổi local chưa commit | Docker/bwrap, Secrets, hub, capture, verifier, recovery và iteration |
+
+HEAD không đại diện toàn bộ working tree của checkout Harness. Bản bổ sung dựa trên các
+file đã đọc, không tuyên bố server đã chạy cùng bytes, profile hay flags. Danh sách giao
+diện và nguồn nằm ở [Harness reference](/docs/reference/harness-interfaces).

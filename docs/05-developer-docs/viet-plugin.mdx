@@ -1,48 +1,132 @@
 ---
-title: Viết plugin — "Everything is a plugin"
-description: Điểm mở rộng của harness — cung cấp/sử dụng service, API và event theo contract.
+title: Viết plugin Harness
+description: Khung plugin DSH, khai báo service, nạp vào profile và kiểm tra release trước khi sử dụng.
 sidebar_position: 4
 ---
 
-# Viết plugin — everything is a plugin
+# Viết plugin Harness
 
-Triết lý: [Triết lý thiết kế](/docs/fundamentals/triet-ly). Trang này là hướng dẫn mở rộng.
+Plugin đăng ký năng lực vào runtime DSH: tool, kết nối dịch vụ, verifier, giao diện hoặc
+driver. Chọn điểm mở rộng theo phần việc cần thay. Plugin TestForge gọi broker; verifier
+kiểm tra kết quả; execution hub giữ session và delivery. Chúng có trách nhiệm riêng.
 
-## Điểm mở rộng của harness
+## Package và entry point
 
-| Điểm mở rộng | Plugin cung cấp |
+Các plugin trong source dùng ES module, xuất `name` và hàm `apply(ctx, config)`. Plugin cần
+service khác khai báo `inject`; provider đăng ký service bằng `ctx.provide`.
+
+Ví dụ cấu trúc package verifier thử nghiệm:
+
+| File | Nội dung |
 |---|---|
-| Model / Runtime | Thực thi agent (LLM khác, runtime khác) |
-| Tools / Connectors | Hành động trong scope (browser, test, giao tiếp ngoài) |
-| Project Memory | Ngữ cảnh dự án (relational/graph/vector) |
-| Sandbox | Môi trường task |
-| Testing / Verify | Bằng chứng kiểm tra |
-| Artifact / Delivery | Kết quả và bàn giao |
+| `package.json` | Tên, version, module type và entry point |
+| `lib/index.js` | Hàm `apply` và service verifier |
+| `tests/` | Kiểm tra output hợp lệ/lỗi và report trả về |
 
-## Contract của một plugin
+```json
+{
+  "name": "team-verifier",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "keywords": ["dsh-plugin", "verification"]
+}
+```
 
-Plugin **cung cấp hoặc sử dụng** service, API và event theo contract định sẵn:
+## Cung cấp service verifier
 
-1. **Khai báo provides/requires** — plugin cung cấp gì, cần gì; không khai báo thì không nối.
-2. **Giao diện rõ ràng** — vào/ra qua API/event được định danh; không gọi chéo nội bộ plugin khác.
-3. **Không phá core** — core giữ danh tính, trạng thái, quyền; plugin bị core kiểm tra tính toàn vẹn
-   (plugin lock).
-4. **Có kiểm chứng** — plugin mới phải qua [kiểm chứng độc lập](/docs/architecture/kiem-chung-phuc-hoi/kiem-chung-doc-lap)
-   trước khi vào workflow thật.
+Ví dụ chỉ kiểm tra output có `summary` dạng chuỗi không rỗng. Nó minh họa chữ ký service và
+report, chưa kiểm tra chất lượng mã hoặc chạy test:
 
-## Quy trình đóng góp một plugin
+```javascript
+export const name = 'team-verifier';
 
-1. Viết đề xuất: điểm mở rộng nào, provides/requires gì, contract ra sao.
-2. Hiện thực + bộ test riêng (xem [Kiểm thử](/docs/developer-docs/kiem-thu)).
-3. PR có bằng chứng chạy thử; người duyệt mảng harness merge.
-4. Đăng ký vào cấu hình harness; chạy smoke test end-to-end.
+export function apply(ctx) {
+  ctx.provide('adlcVerifier', {
+    async verify({output, startedAt}) {
+      const passed = typeof output?.summary === 'string'
+        && output.summary.trim().length > 0;
+      const status = passed ? 'PASSED' : 'FAILED';
+      return [{
+        verifier_ref: 'plugin:team-verifier/0.1.0',
+        status,
+        checks: [{
+          check_id: 'required-summary',
+          status,
+          summary: passed ? 'Summary is present.' : 'Summary is missing.',
+          evidence_artifact_refs: [],
+        }],
+        evidence_artifact_refs: [],
+        started_at: startedAt,
+        completed_at: new Date().toISOString(),
+      }];
+    },
+  });
+}
+```
 
-:::note[Nội dung đang bổ sung]
-Chi tiết kỹ thuật (khung code plugin, danh sách interface, quy ước đặt tên event) sẽ được bổ sung
-bởi nhóm harness.
-:::
+Consumer của service khai báo `export const inject = ['adlcVerifier']` rồi gọi service
+qua context. Source `vai-adlc-runtime` còn yêu cầu `webServer`, `credentials`, driver và
+collector. Chỉ cấp một provider phù hợp cho mỗi profile; không nạp chồng verifier mới
+vào một profile đang dùng verifier khác.
 
-## Liên kết
+Tool registration và native agent có API riêng của DSH. Đối chiếu type/package đang pin,
+không suy ra cách đăng ký tool từ ví dụ `ctx.provide` này. Đề xuất file của native iteration
+cũng không cấp tool cho agent.
 
-- Hệ sinh thái plugin hiện có: [Tầng 3 · Harness](/docs/architecture/tang-3-harness/tong-quan-harness)
-- SDK/gateway bên dưới plugin: [SDK & Gateway](/docs/developer-docs/sdk-gateway)
+## Nạp vào profile
+
+Thêm row vào khối `insert` đang có trong `plugins/patch.yml`. Ví dụ giữ plugin tắt cho tới
+khi kiểm tra xong cấu hình và test:
+
+```yaml
+- insert:
+    - id: team-verifier
+      name: /app/plugins/team-verifier/lib/index.js
+      disabled: true
+```
+
+Giữ các row cũ khi thêm plugin. Kiểm tra YAML, đường dẫn trong container và service phụ thuộc,
+rồi nạp lại runtime theo quy trình deployment. Sau đó đọc loader/inventory để xác nhận
+plugin đã nạp. Container chạy chưa chứng minh `apply` đã đăng ký đủ service.
+
+## Credential và backend
+
+Plugin dùng service credential của runtime để resolve tên ref. Trong source, `vai-secrets`
+cung cấp giao diện lưu/xóa và liệt kê tên; plugin gọi backend lấy giá trị qua credentials
+service. Không đưa giá trị secret vào prompt, output, URL hay log lỗi.
+
+Backend lỗi thì trả mã lỗi cùng ngữ cảnh đủ chẩn đoán, giữ mã job nếu đã tạo. Timeout sau khi
+gửi job cần được đối soát trước retry. Thay đổi secret của plugin và env broker có cách áp
+dụng khác nhau; xem [cấu hình plugin](/docs/user-guides/harness-dsh/model-plugin-secret).
+
+## Version và plugin lock
+
+Profile execution hub dùng lock gồm `plugin_id`, `version`, `content_digest`, `required`.
+Runtime tính lại digest bytes cài đặt và từ chối execution khi không khớp. Cơ chế này thuộc
+profile có integrity check, không phải cam kết chung cho mọi plugin DSH.
+
+Khi thay bytes của plugin đã phát hành, tạo version/digest và recipe mới. Giữ lock của
+session cũ. Kiểm tra đồng bộ lock bằng công cụ của release; tránh ghi digest mới vào
+recipe cũ chỉ để làm readiness xanh.
+
+## Kiểm tra trước bàn giao
+
+1. Kiểm tra cú pháp entry point và cấu hình profile.
+2. Test input hợp lệ, thiếu trường, lỗi backend và kết quả kiểm tra thất bại.
+3. Nếu plugin tạo job hoặc ghi dữ liệu, test duplicate delivery, timeout và đối soát.
+4. Kiểm tra dependency/inventory và digest khi profile có lock.
+5. Chạy smoke test trên workspace thử nghiệm; đọc output và log đã lọc secret.
+
+Trong ví dụ verifier, output thiếu `summary` phải trả `FAILED`. Muốn tuyên bố có kiểm thử
+chức năng thì cần thêm verifier/runner và evidence tương ứng.
+
+## Tài liệu liên quan
+
+- [Tổng quan Harness](/docs/architecture/tang-3-harness/tong-quan-harness).
+- [SDK và gateway](/docs/developer-docs/sdk-gateway).
+- [Contract và bằng chứng](/docs/architecture/tang-3-harness/contract-va-bang-chung).
+- [Giao diện Harness](/docs/reference/harness-interfaces).
