@@ -149,8 +149,8 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    // Social card theo brand Vanguard (nen den + logo do) — hien khi share link
+    image: 'img/social-card.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
