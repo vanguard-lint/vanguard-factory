@@ -304,7 +304,7 @@ h6,
   display: inline-flex;
   align-items: center;
   height: 34px;
-  padding: 0 14px;
+  padding: 4px 14px 0;
   border-radius: 8px;
   font-family: var(--ifm-font-family-base);
   font-weight: 600;
@@ -365,12 +365,14 @@ html.docs-wrapper .theme-announcement-bar {
 }
 
 /* ===== Hệ nút: primary = đỏ đặc, secondary = viền (outline) ===== */
+/* Hiệu chỉnh quang học: Overpass + dấu tiếng Việt khiến mực chữ ngồi cao hơn
+   tâm flex ~1.5px (đo bằng pixel). padding-top lệch đẩy chữ về tâm quang học. */
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 40px;
-  padding: 0 20px;
+  padding: 3px 20px 0;
   font-weight: 600;
   font-size: 0.95rem;
   border: 1px solid transparent;
