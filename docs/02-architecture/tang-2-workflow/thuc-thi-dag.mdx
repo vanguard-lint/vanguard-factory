@@ -1,45 +1,55 @@
 ---
 title: Thực thi DAG
-description: Spec → DAG, wave song song, run-state, join policy, rẽ nhánh deterministic và 3 node type.
-sidebar_position: 4
+description: Spec → DAG, thi công theo wave song song, join policy, rẽ nhánh deterministic, cạnh ngược và 3 node type.
+sidebar_position: 3
 ---
 
-# Thực thi DAG — wave, join, rẽ nhánh
+# Thực thi DAG — thi công theo wave
 
-Runner dựng một **Graph** từ spec đã parse rồi chạy theo **wave** — lớp topological của DAG; các
-node không phụ thuộc nhau trong cùng wave chạy **song song** (mỗi node một session agent).
+**Thi công một công trình: tầng móng xong mới đổ cột; các hạng mục cùng tầng làm song song.**
+Runner chạy DAG đúng như vậy. Mỗi **wave** là một *lớp phụ thuộc*: wave 1 gồm các node không có
+input; node xong, wave kế bắt đầu; các node trong cùng wave chạy **song song**, mỗi node một
+session agent riêng.
 
-## Spec → DAG: biên dịch Kestra-style
+Hai điều cần biết ngay từ đầu:
 
-Spec viết dạng `tasks:` lồng nhau; loader biên dịch ra `nodes` + `edges`:
+- **Node hỏng không làm sập công trình.** Node gặp lỗi **không ném exception làm chết DAG** —
+  lỗi là một **trạng thái contract** (`BLOCKED`, `NEEDS_CONTEXT`…). Việc chặn dòng chảy sản phẩm
+  là việc của **cổng duyệt và join policy**, không phải của crash.
+- **Mỗi node tự đặt ngưỡng của mình**: `timeout_s` / `stall_s` / `max_rearms` đặt riêng
+  (rỗng → default gateway) — [Chịu lỗi & phục hồi](/docs/architecture/tang-2-workflow/chiu-loi-phuc-hoi).
+
+## Từ bản vẽ đến sơ đồ — spec → DAG
+
+Spec viết dạng `tasks:` lồng nhau (Kestra-style); loader biên dịch ra `nodes` + `edges`:
 
 - **Node thường** (`WorkloopTask`, `ReviewNode`, `Condition`) đăng ký vào graph.
 - **Flowable** (`Parallel`, `Sequential`) là **cấu trúc thuần** — không thành node, chỉ tổ chức
-  dây nối: `Sequential` nối children tiếp nhau trong nhánh; `Parallel` cho mọi nhánh con cùng nhận
-  input từ trước nó, đầu ra cả nhánh gộp lại cho node kế.
-- **Cạnh ngầm định**: task sau nhận `report` của task trước làm `context` — không cần viết edges
-  cho đường thẳng. Định dạng cũ `nodes:` + `edges:` vẫn đọc được.
+  dây nối: `Sequential` nối children tiếp nhau trong nhánh; `Parallel` cho mọi nhánh con cùng
+  nhận input từ trước nó, đầu ra cả nhánh gộp lại cho node kế.
+- **Cạnh ngầm định**: task sau nhận `report` của task trước làm `context` — đường thẳng không cần
+  viết edges. Định dạng cũ `nodes:` + `edges:` vẫn đọc được.
 
-## Wave — và node hỏng không chặn wave
+## Ba loại node
 
-- Wave = lớp bậc phụ thuộc: wave 1 chạy các node không có input; node xong, wave kế bắt đầu.
-- Node gặp lỗi **không ném exception làm chết DAG** — lỗi là **trạng thái contract** (`BLOCKED`,
-  `NEEDS_CONTEXT`…). Wave tiếp tục theo đúng nghĩa graph; việc chặn dòng chảy sản phẩm là việc
-  của **cổng duyệt và join policy**, không phải của crash.
-- Mỗi node: `timeout_s` / `stall_s` / `max_rearms` đặt riêng (rỗng → default gateway) —
-  [Chịu lỗi & phục hồi](/docs/architecture/tang-2-workflow/chiu-loi-phuc-hoi).
+| Type | Ví von | Vai trò | Điểm chính |
+|---|---|---|---|
+| `WorkloopTask` | Công nhân | Giao việc cho agent theo `role` | `brief` + persona; `need_review`; `join_policy`; `pass_full` |
+| `ReviewNode` | Cổng kiểm | Cổng review là node riêng trên graph | 2 lối ra; vòng lặp qua **cạnh ngược** — [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl) |
+| `Condition` | Người phân luồng | Rẽ nhánh deterministic | Xem mục [Rẽ nhánh](#rẽ-nhánh--conditionnode-deterministic) phía dưới |
 
-## Run-state — dữ liệu đi theo cạnh nào
+## Run-state — dữ liệu đi theo đường nào
 
-Lfx chỉ bảo đảm **thứ tự** qua cạnh; dữ liệu thật đi qua **run-state** dùng chung:
+Engine lfx chỉ bảo đảm **thứ tự** qua cạnh. Còn dữ liệu thật đi qua **run-state dùng chung** —
+một trạng thái run mà mọi node cùng nhìn thấy:
 
 - `node_results["<node>.<output>"]` — kết quả chuẩn hoá của node: `status`, `report`,
   `session_ref`, `report_path`, cờ `skipped`/`reused`.
-- `node_edges` — cạnh thật của spec; node đọc kết quả các cạnh trỏ vào mình từ run-state thay vì
-  tin HandleInput delivery (cơ chế delivery của engine không đáng tin cho mọi trường hợp).
+- `node_edges` — cạnh thật của spec; node đọc kết quả các cạnh trỏ vào mình **từ run-state** thay
+  vì tin HandleInput delivery (cơ chế delivery của engine không đáng tin cho mọi trường hợp).
 
-Hệ quả: mọi node type đọc dữ liệu upstream theo **cùng một cách** — resume, review, condition đều
-nhìn thấy cùng một trạng thái run.
+Hệ quả thiết kế: mọi node type đọc dữ liệu upstream theo **cùng một cách** — resume, review,
+condition đều nhìn thấy cùng một trạng thái run.
 
 ## Join policy — khi nhiều nhánh nhập lại
 
@@ -48,43 +58,41 @@ nhìn thấy cùng một trạng thái run.
 | `all` (mặc định) | Đợi **đủ mọi nhánh** vào; có **1 nhánh skip** → node này **skip** theo (lý do ghi vào `why`) |
 | `all-active` | Nhánh skip **không chặn** — node chạy với các nhánh còn sống |
 
-Node bị skip trả SKIP marker (`skipped: true`) vào run-state → nút phía sau nhìn thấy và quyết
-định theo policy của chính nó. Skip lan truyền có kiểm soát, không âm thầm.
+Node bị skip trả **SKIP marker** (`skipped: true`) vào run-state → nút phía sau nhìn thấy và
+quyết định theo policy của chính nó. Skip lan truyền **có kiểm soát, không âm thầm**.
 
 ## Rẽ nhánh — ConditionNode deterministic
 
-Nguyên tắc: **cạnh không bao giờ mang điều kiện** — điều kiện sống trong node. Đánh giá là
+Nguyên tắc: **cạnh không bao giờ mang điều kiện** — điều kiện sống trong node. Và đánh giá là
 **code, không nhờ LLM**:
 
-- Biểu thức hỗ trợ: `status == DONE`, `status != BLOCKED`, `contains: <chuỗi>`, `regex: <pattern>`.
-- Hai lối ra `match` / `no_match` — mỗi lần đánh giá **chỉ một lối sống**; lối kia bị **loại ở tầng
-  graph** (`exclude_branches_conditionally`) — nhánh không đi (kể cả đoạn re-converge) không chạy.
+- Biểu thức hỗ trợ: `status == DONE`, `status != BLOCKED`, `contains: <chuỗi>`,
+  `regex: <pattern>`.
+- Hai lối ra `match` / `no_match` — mỗi lần đánh giá **chỉ một lối sống**; lối kia bị **loại ở
+  tầng graph** (`exclude_branches_conditionally`) — nhánh không đi (kể cả đoạn re-converge) không
+  chạy.
 - Phòng hờ: lối không đi vẫn trả SKIP marker — nếu cơ chế graph-level chưa kịp loại, node đích
   nhận skip và tự đánh dấu `SKIPPED`.
-- **Fail-closed**: biểu thức không hiểu được → `no_match` kèm lý do, không đoán.
+- **Fail-closed**: biểu thức không hiểu được → `no_match` kèm lý do, **không đoán**.
 
-## Ba node type — và cạnh ngược
+## Cạnh ngược — vòng sửa–chạy không thành deadlock
 
-| Type | Vai trò | Điểm chính |
-|---|---|---|
-| `WorkloopTask` | Giao việc cho agent theo `role` | `brief` + persona; `need_review`; `join_policy`; `pass_full` |
-| `ReviewNode` | Cổng review là node riêng | 2 lối ra; vòng lặp qua **cạnh ngược** — [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl) |
-| `Condition` | Rẽ nhánh deterministic | Như trên |
-
-**Cạnh ngược** (`ReviewNode --changes_requested--> node bị review`) được nhận diện bằng DFS
-(back edge) và **không đưa vào engine**: nếu cho engine schedule theo cạnh, gate chờ node sửa mà
-node chờ gate review → **deadlock**. Vòng sửa-chạy lại do `ReviewNode` tự điều khiển bằng
-run-state + **resume session** của node bị review.
+Review vòng lặp cần một cạnh đi ngược: `ReviewNode --changes_requested--> node bị review`. Cạnh
+ngược này được nhận diện bằng DFS (back edge) và **không đưa vào engine**: nếu để engine schedule
+theo cạnh, gate chờ node sửa mà node chờ gate review → **deadlock**. Vòng sửa–chạy lại do
+`ReviewNode` **tự điều khiển** bằng run-state + **resume session** của node bị review — chi tiết:
+[Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl).
 
 ## pass_full — truyền đủ ngữ cảnh upstream
 
 Mặc định node chỉ nhận report ngắn. Đặt `pass_full: upstream` → engine fetch **đầy đủ** cho từng
 node trước còn sống: tin nhắn cuối của agent (response) + **nội dung report** (trích từ tool-call
 ghi file trong transcript — BE không đọc được filesystem host), rồi inject vào prompt đầu việc.
-Lỗi fetch không chặn run — ghi `fetch_error` để node biết mà hỏi lại (`NEEDS_CONTEXT`).
+Lỗi fetch **không chặn run** — ghi `fetch_error` để node biết mà hỏi lại (`NEEDS_CONTEXT`).
 
 ## Liên kết
 
 - Cú pháp đầy đủ các trường: [Spec DSL](/docs/reference/spec-dsl) ·
   [Viết workflow spec](/docs/developer-docs/viet-workflow-spec)
 - Cổng review sau node: [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl)
+- Node hỏng, stall, re-arm: [Chịu lỗi & phục hồi](/docs/architecture/tang-2-workflow/chiu-loi-phuc-hoi)

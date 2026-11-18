@@ -1,76 +1,89 @@
 ---
 title: Factory registry
-description: Spec sống trong Git — sync, phiên bản hoá, configure, xoá và run context.
-sidebar_position: 3
+description: Workflow sống trong Git chứ không sống trong DB — bố cục factory repo, sync, configure, xoá và run context.
+sidebar_position: 2
 ---
 
-# Factory registry — spec là nguồn sự thật
+# Factory registry — workflow sống trong Git
 
-Workflow **không sống trong DB**. Nó sống trong **factory repo** (Gitea, branch `main`) — quản lý
-bằng Git, sửa qua commit. Backend chỉ giữ **bản chỉ mục** (bảng `workflows` trong SQLite) để tra
-c cứu nhanh và ghép layout cho dashboard. Xoá DB không mất workflow; sửa spec ngoài Git không có
-giá trị.
+**Công thức nằm trong sổ, không nằm trong đầu bếp.** Workflow là **file trong factory repo**
+(Gitea, branch `main`) — quản lý bằng Git, sửa qua commit, có lịch sử như mọi tài liệu khác.
+Backend chỉ giữ **bản chỉ mục** (bảng `workflows` trong SQLite) — như thủ thư giữ thẻ mục lục:
+đủ để tra cứu nhanh và ghép layout cho dashboard, nhưng không quyết định nội dung.
 
-## Bố cục factory repo
+Ba hệ quả để luôn nhớ:
+
+- **Xoá DB không mất workflow** — nguồn vẫn nằm trong Git.
+- **Sửa spec ngoài Git không có giá trị** — lần sync kế sẽ ghi đè.
+- **Muốn biết phiên bản nào là thật — nhìn `git log`**, không nhìn DB.
+
+## Sổ chứa gì — bố cục factory repo
 
 ```
 factory-repo/
-├── factory.yaml              # harness.kind (dsh|opencode|fake), model, workspace…
+├── factory.yaml              # thông số nhà máy — harness.kind (dsh|opencode|fake), model, workspace…
 ├── workflows/
-│   ├── <name>.spec.yaml      # spec DAG — Kestra-style (tasks:) hoặc nodes/edges
-│   └── <name>.layout.json    # bố cục canvas — tách khỏi logic
-├── briefs/<node>.md          # brief dài tách khỏi spec (ưu tiên: inline > file > rỗng)
-└── agents/<role>.md          # persona theo role (frontmatter name/model + system prompt)
+│   ├── <name>.spec.yaml      # bản vẽ — DAG spec, Kestra-style (tasks:) hoặc nodes/edges
+│   └── <name>.layout.json    # cách vẽ lên bảng canvas — tách khỏi logic
+├── briefs/<node>.md          # giấy giao việc dài — tách khỏi spec (ưu tiên: inline > file > rỗng)
+└── agents/<role>.md          # hồ sơ nhân vật theo role (frontmatter name/model + system prompt)
 ```
 
-## Sync — Git → chỉ mục
+## Nhịp đồng bộ — sync từ Git về chỉ mục
 
-`POST /api/v1/flows/sync` (backend cũng **tự sync trước mỗi lần chạy**):
+`POST /api/v1/flows/sync` (backend cũng **tự sync trước mỗi lần chạy**) làm sáu việc:
 
-1. **Pull cứng** — clone lần đầu, hoặc `fetch` + `reset --hard origin/main` (checkout luôn khớp
-   remote, không có trạng thái dở).
-2. **Parse + validate** từng spec — YAML dict, phải có `tasks:` hoặc `nodes:`; sai → báo
-   `error` theo workflow, không làm hỏng các workflow khác.
+1. **Pull cứng** — clone lần đầu, hoặc `fetch` + `reset --hard origin/main`: checkout luôn khớp
+   remote, không có trạng thái dở.
+2. **Parse + validate từng spec** — YAML dict, phải có `tasks:` hoặc `nodes:`; sai → báo `error`
+   theo từng workflow, không làm hỏng các workflow khác.
 3. **Upsert chỉ mục** — spec/layout/config/description; **version +1 khi nội dung spec đổi**.
-4. **Prune** — workflow không còn file trong tree bị xoá khỏi registry (sync không hồi sinh đặc).
-5. Trả **SHA** của commit vừa sync — mọi run từ đây ghi `sha` vào metadata job → truy ngược được
+4. **Prune** — workflow không còn file trong tree bị xoá khỏi registry (đã bị xoá thì sync không
+   hồi sinh).
+5. **Trả SHA** của commit vừa sync — mọi run từ đây ghi `sha` vào metadata job → truy ngược được
    đúng phiên bản spec đã chạy.
-6. Nền: **auto-seed** file INPUTS (`docs/`, `briefs/`) vào workspace harness (≤ 50 file/lần) —
-   tránh cảnh node hỏi HITL "INPUT không tồn tại"; seed lỗi không được làm hỏng sync.
+6. **Auto-seed INPUTS** (`docs/`, `briefs/`) vào workspace harness (≤ 50 file/lần) — tránh cảnh
+   node hỏi HITL "INPUT không tồn tại"; seed lỗi không được làm hỏng sync.
 
-## Configure — agent soạn spec qua commit
+## Sửa workflow — configure: vẽ sai trả về tại chỗ
 
-`configure_workflow` (MCP) hoặc `POST /flows/{name}/configure` — đường đi của một thay đổi spec:
+`configure_workflow` (MCP) hoặc `POST /flows/{name}/configure` — một thay đổi spec đi trọn đường
+này:
 
 ```
 validate fail-loud → ghi file (spec + agents) → git commit → git push → sync → đăng ký
 ```
 
-- **Validate TRƯỚC khi ghi**: YAML sai cấu trúc, spec rỗng node, node type lạ → từ chối với thông
-  báo kèm ví dụ đúng — orchestrator đọc lỗi tự sửa (không lưu spec rác vào lịch sử Git).
-- **Mỗi configure = 1 commit** — lịch sử spec chính là `git log`; tác giả ghi rõ trong message
+- **Validate TRƯỚC khi ghi** — YAML sai cấu trúc, spec rỗng node, node type lạ → từ chối với
+  thông báo kèm **ví dụ đúng**: orchestrator đọc lỗi tự sửa, và lịch sử Git không lưu spec rác.
+- **Mỗi configure = 1 commit** — lịch sử spec chính là `git log`; message ghi rõ tác giả
   (`configure_workflow: <name>`).
-- Agent định nghĩa persona `agents/*.md` (frontmatter `name`/`description`/`model` + body là
-  system prompt) — node tham chiếu qua `role: <tên file>`.
+- **Persona là file `agents/*.md`** — frontmatter `name`/`description`/`model` + body là system
+  prompt; node tham chiếu qua `role: <tên file>`.
 
 ## Xoá workflow
 
 `DELETE /api/v1/flows/{name}` — `git rm` spec → commit → push → xoá registry. Một call sạch cả
 **nguồn (Gitea)** lẫn **chỉ mục (DB)**; sync sau không hồi sinh.
 
-## Run context — input lúc chạy
+## Run context — truyền input lúc chạy, không phải lúc sửa spec
 
 Chạy không nhất thiết phải sửa spec. `POST /flows/{name}/run` nhận `context` (ví dụ
 `lifecycle_id`, `spec_link`, `repo` đích) — runner **chèn vào brief qua placeholder**
-`{{ctx.<key>}}` trước khi giao việc; key không khớp bị thay bằng chuỗi rỗng (brief không lộ
-placeholder thừa). Event `run_context` ghi lại các key đã dùng.
+`{{ctx.<key>}}` trước khi giao việc. Key không khớp được thay bằng chuỗi rỗng (brief không lộ
+placeholder thừa); event `run_context` ghi lại các key đã dùng.
 
-:::info[Phân vai với cổng PR spec]
+:::info[Configure thường ngày ≠ cổng PR spec]
 
 Sửa spec qua `configure` là thao tác vận hành bình thường — nhưng **thay đổi spec trong quy trình
 có kiểm soát** (đang có run phục thuộc) phải đi qua cổng PR: đề xuất → duyệt → merge, **cấm tự
 duyệt**. Tách hai đường này giúp registry luôn biết spec phiên bản nào là nguồn sự thật. Chi tiết
-cổng duyệt: [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl) · cú pháp spec:
-[Viết workflow spec](/docs/developer-docs/viet-workflow-spec) · [Spec DSL](/docs/reference/spec-dsl).
+cổng duyệt: [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl).
 
 :::
+
+## Liên kết
+
+- Cú pháp spec đầy đủ: [Viết workflow spec](/docs/developer-docs/viet-workflow-spec) ·
+  [Spec DSL](/docs/reference/spec-dsl)
+- Trạng thái job gắn với SHA nào: [State machine vòng đời](/docs/architecture/tang-2-workflow/state-machine)

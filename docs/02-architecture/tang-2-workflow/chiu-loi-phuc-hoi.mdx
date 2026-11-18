@@ -1,25 +1,28 @@
 ---
 title: Chịu lỗi & phục hồi
-description: Re-arm phiên, taxonomy lỗi, PAUSE/RESUME checkpoint và resume node-level.
+description: Ba tầng chịu lỗi — retry RPC, re-arm phiên, terminal contract; PAUSE/RESUME checkpoint và resume node-level.
 sidebar_position: 6
 ---
 
 # Chịu lỗi & phục hồi
 
 **Node chết ≠ run chết.** Một run có thể kéo dài hàng giờ với hàng chục session agent; phiên rớt,
-provider rate-limit, người duyệt vắng mặt — đều là chuyện bình thường. Cơ chế chịu lỗi xếp thành
-**3 tầng**, mỗi tầng xử lý đúng loại hỏng hóc của mình:
+provider rate-limit, người duyệt vắng mặt — đều là chuyện bình thường. Cơ chế chịu lỗi vì thế
+xếp thành **3 lớp lưới an toàn**, mỗi lớp bắt đúng loại hỏng hóc của mình:
 
-| Tầng | Xử lý gì | Cơ chế |
+| Tầng | Bắt cái gì | Cơ chế |
 |---|---|---|
 | 1 · RPC | Lỗi gọi API lẻ tẻ | Retry idempotent 3×; `session/prompt` **không retry** (tránh prompt kép — submit fail phải ra tầng 2); 401 → reauth một lần |
 | 2 · ReArmControlLoop | Phiên chết/stall giữa task | Vòng điều khiển chung (Template Method) — re-arm có bookkeeping |
 | 3 · Contract | Node kết thúc xấu | Terminal `BLOCKED`/`NEEDS_CONTEXT` — **tách escalation khỏi logic run** |
 
-## ReArmControlLoop — vòng chịu lỗi chung
+Tầng 1 và 2 là cơ chế của gateway — tự sửa và tự thử lại. Tầng 3 khác hẳn: không hỏng run, chỉ
+**gắn cờ chờ quyết định cấp workflow**.
+
+## Tầng 2 — ReArmControlLoop: vòng chịu lỗi chung
 
 Gateway cụ thể (DSH, OpenCode…) chỉ cài **4 hook** — `_open_session` / `_submit` / `_poll` /
-`_kill`; chính sách chung nằm ở một chỗ:
+`_kill`; chính sách chung nằm ở một chỗ (Template Method):
 
 ```
 mỗi attempt (tối đa max_rearms + 1):
@@ -30,14 +33,14 @@ mỗi attempt (tối đa max_rearms + 1):
   └─ terminal          → đóng gói Contract (status + report + errors taxonomy)
 ```
 
-Điểm quan trọng: **re-arm tái sử dụng session cũ** — agent tiếp tục đúng context đã làm chủ thay
-vì mở session mới, đọc lại brief từ đầu rồi stall lại như cũ (hỏng thật đã gặp: 7 session mới
-liên tiếp vô ích). Số lần thử được ghi vào `contract.attempts`.
+Điểm thiết kế quan trọng nhất: **re-arm tái sử dụng session cũ** — agent tiếp tục đúng context đã
+làm chủ thay vì mở session mới, đọc lại brief từ đầu rồi stall lại như cũ. Hỏng thật từng gặp:
+7 session mới liên tiếp vô ích. Số lần thử được ghi vào `contract.attempts`.
 
-## Taxonomy lỗi — quyết định theo mã, không đoán theo chữ
+## Tầng 3 — taxonomy lỗi: quyết định theo mã, không đoán theo chữ
 
 Mọi lỗi native của harness/provider được `classify_error` map về **mã chuẩn** — engine và
-`retry_policy` chỉ đọc mã:
+`retry_policy` chỉ đọc mã, không đoán theo chữ trong message:
 
 | Mã | Ý nghĩa | Chính sách mặc định |
 |---|---|---|
@@ -47,21 +50,22 @@ Mọi lỗi native của harness/provider được `classify_error` map về **m
 | `RATE_LIMIT` / `PROVIDER_5XX` | 429 / 502-504 | **backoff** |
 | `TIMEOUT` / `NETWORK` / `BUDGET_EXCEEDED` / `UNKNOWN` | hết giờ · mạng · vượt ngân sách · không phân loại | **re-arm** |
 
-Node không tự set terminal sau khi kết thúc → chờ 1 nhịp rồi đọc lại; vẫn không →
-`DONE_WITH_CONCERNS` + event `node_status_unclear` (fail-closed **có báo cáo**).
+Trường hợp đặc biệt — node không tự set terminal sau khi kết thúc: chờ 1 nhịp rồi đọc lại; vẫn
+không → `DONE_WITH_CONCERNS` + event `node_status_unclear` — fail-closed **có báo cáo** (chi tiết
+kiểm chéo: [State machine vòng đời](/docs/architecture/tang-2-workflow/state-machine)).
 
-## PAUSE / STOP — signal có xác nhận
+## Dừng và tiếp — PAUSE / STOP có xác nhận
 
 - Gửi qua `POST /monitor/jobs/{id}/signal` (`PAUSE` | `STOP`) — ghi vào bảng `signals` với cờ
   `consumed`.
 - Engine gọi **pause probe** ở ranh giới giữa các bước chạy: probe **tiêu thụ** signal (đánh dấu
-  consumed — không dừng hai lần): `STOP` → cancel run; `PAUSE` → engine ném `GraphPausedException`
-  → **checkpoint** chụp toàn bộ trạng thái graph (node nào đã build, decision đã chọn) vào
-  `SqliteCheckpointStore`, job chuyển `suspended` + event `job_paused`.
+  consumed — không dừng hai lần). `STOP` → cancel run; `PAUSE` → engine ném
+  `GraphPausedException` → **checkpoint** chụp toàn bộ trạng thái graph (node nào đã build,
+  decision đã chọn) vào `SqliteCheckpointStore`, job chuyển `suspended` + event `job_paused`.
 - `POST /monitor/jobs/{id}/resume` (chỉ khi `suspended`) → **restore graph từ checkpoint** — node
   đã xong không chạy lại; event `run_resumed`.
 
-## Resume node-level — tái sử dụng kết quả giữa các run
+## Chạy lại sau khi sửa — resume node-level
 
 Ngoài resume-from-checkpoint (cùng job), chạy lại *sau khi đã sửa* tận dụng được node đã xong của
 job cũ:
