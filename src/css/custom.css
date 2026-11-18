@@ -667,3 +667,19 @@ html.docs-wrapper .theme-announcement-bar {
   overflow: visible;
   text-overflow: clip;
 }
+
+/* ===== Cột đọc & tiêu đề docs ===== */
+/* Cột đọc 810px như mặc định, căn giữa trong cha (margin auto) */
+article .markdown {
+  max-width: 810px;
+  margin-inline: auto;
+}
+
+/* Tiêu đề docs nhỏ hơn một bậc: h1 48px -> 44px, h2 32px -> 30px */
+.markdown h1:first-child {
+  --ifm-h1-font-size: 2.75rem;
+}
+
+.markdown > h2 {
+  --ifm-h2-font-size: 1.875rem;
+}
