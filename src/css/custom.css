@@ -342,6 +342,18 @@ h6,
   padding: 8px 16px;
 }
 
+/* Ẩn announcement bar trên các trang docs — bar chỉ dùng cho landing/blog.
+   Lưu ý: Docusaurus gắn class "docs-wrapper plugin-docs..." trực tiếp lên <html>,
+   không phải div trong body, nên selector phải nhắm html.docs-wrapper.
+   Phải đặt cả biến chiều cao về 0, nếu không navbar vẫn bị đẩy xuống 30px hở khoảng trống. */
+html.docs-wrapper {
+  --docusaurus-announcement-bar-height: 0px;
+}
+
+html.docs-wrapper .theme-announcement-bar {
+  display: none;
+}
+
 .theme-announcement-bar a {
   color: #ff8d84;
   font-weight: 600;
