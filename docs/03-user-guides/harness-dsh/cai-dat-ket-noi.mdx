@@ -1,0 +1,122 @@
+---
+title: Cài đặt và kết nối Harness
+description: Chuẩn bị DSH, kiểm tra plugin, cấu hình gateway factory và chạy smoke test từ Workloop.
+sidebar_position: 2
+---
+
+# Cài đặt và kết nối Harness
+
+Mục tiêu: Workloop tạo được một task trên DSH và nhận lại report. Nếu Harness đã được triển
+khai, bắt đầu từ **kiểm tra runtime**; phần dựng container dành cho quản trị viên.
+
+## 1 · Chuẩn bị thông tin
+
+| Cần có | Nơi sử dụng |
+|---|---|
+| URL và token DSH | Gateway từ backend Workloop tới Harness |
+| Factory repo cùng workspace trên Harness | Lưu spec/persona và tệp của task |
+| Provider/model đã cấu hình | Chạy agent; lấy đúng ID từ môi trường hiện tại |
+| TaskLoop và các plugin cần thiết | Theo dõi contract; bổ sung Sandbox, Memory, TestForge khi cần |
+| Token API Workloop | Gọi sync, run, monitor; khác token DSH |
+
+URL phải truy cập được **từ máy/container chạy backend Workloop**. `127.0.0.1` trong container
+trỏ về chính container đó. Không thay một URL máy chủ bằng localhost của máy người dùng.
+
+## 2 · Dựng container DSH nếu chưa có
+
+Dùng repository triển khai Harness nội bộ do admin quản lý, checkout release/commit đã duyệt.
+Repository tài liệu này không chứa Dockerfile, runtime DSH hoặc backend TestForge.
+
+Với deployment Docker Compose có service `deepseek-harness`, vào thư mục chứa `compose.yml`
+hoặc `docker-compose.yml` của deployment rồi chạy:
+
+```bash
+docker compose config --services
+docker compose up -d --build deepseek-harness
+docker compose ps deepseek-harness
+```
+
+Kiểm tra port được publish trong Compose và mở Web UI theo URL của deployment. Profile tham
+chiếu dùng cổng `3080`; một máy chủ khác có thể publish cổng khác. Dùng token do deployment
+cấp; log khởi động có thể chứa token nên chỉ đọc trong terminal riêng tư.
+
+**Kết quả đúng:** container hoạt động, Web UI đăng nhập được, workspace lưu bền, provider/model
+đã được cấu hình. Không suy ra plugin hoạt động chỉ từ trạng thái container.
+
+Khi triển khai, giữ nguyên giới hạn tài nguyên, volume và chính sách mạng của profile đã duyệt.
+Không sao chép Compose riêng của một dự án khác để thay môi trường đang chạy.
+
+## 3 · Kiểm tra runtime và plugin
+
+1. Mở DSH bằng URL được cấp; kiểm tra workspace sản phẩm có đúng đường dẫn trên Harness.
+2. Kiểm tra provider/model dùng cho factory. Một phiên chat thử không thay cấu hình model của
+   workflow; phải đối chiếu cả `factory.yaml` và override của node.
+3. Trong Plugins/Plugin Hub, kiểm tra TaskLoop và plugin công việc cần dùng đã được nạp.
+4. Khi cần TestForge, làm theo [Kết nối TestForge](/docs/user-guides/testforge/cai-dat-ket-noi).
+
+Plugin **đã cài**, **đã nạp** và **backend hoạt động** là ba bước kiểm tra khác nhau. Với
+TestForge, phải gọi thêm `testforge_health` từ Harness trước khi chạy suite.
+
+## 4 · Cấu hình gateway trong factory
+
+Gateway DSH tham chiếu đọc kết nối từ `harness` trong `factory.yaml`. Ví dụ dưới đây là cấu hình
+để điền lại theo môi trường, **không phải giá trị mặc định áp dụng cho mọi factory**:
+
+```yaml
+harness:
+  kind: dsh
+  url: "http://harness-host:3080"
+  token_env: DSH_TOKEN
+  workspace: "/app/workspace/factory-demo"
+
+model:
+  provider: "provider-da-cau-hinh"
+  default: "model-da-duyet"
+```
+
+Đặt token thật trong biến `DSH_TOKEN` của **backend Workloop**. `token_env` chỉ là tên biến;
+không ghi token vào YAML. Điền đúng URL, workspace, provider và model trước khi sync.
+
+Một số script triển khai còn dùng `DSH_BASE_URL`/`WORKLOOP_DSH_WS` để tạo cấu hình. Kiểm tra
+script của môi trường có thực sự đọc các biến này; khai env riêng không tự thay `factory.yaml`.
+
+Thay đổi cấu hình/spec theo quy trình Git/PR của factory, rồi nạp lại chỉ mục:
+
+```bash
+curl -X POST "$WORKLOOP_URL/api/v1/flows/sync" \
+  -H "Authorization: Bearer $WORKLOOP_TOKEN"
+```
+
+**Kết quả đúng:** phản hồi có SHA và danh sách workflow. Việc sync chưa chạy agent.
+
+## 5 · Smoke test từ Workloop
+
+Chọn workflow một node đã được duyệt, chẳng hạn `hello2` trong hướng dẫn
+[Cài đặt Workloop](/docs/user-guides/workloop-dieu-phoi/cai-dat). Task chỉ ghi một report nhỏ
+trong workspace thử nghiệm. Chạy một lần qua MCP:
+
+```text
+Chạy workflow hello2 đã có bằng run_workflow(name="hello2", fresh=true).
+Ghi lại job_id, theo dõi get_run(job_id), rồi đọc get_report(job_id).
+```
+
+Trước khi chạy, kiểm tra đúng factory/workspace và nội dung workflow. Tạo spec mới qua
+`configure_workflow` có thể ghi, commit và push vào factory; bước này cần theo quy trình
+đóng góp của nhóm, không phải chỉ là health check.
+
+**Kết quả đúng:**
+
+- Node chuyển từ `IN_PROGRESS` tới trạng thái terminal và có report.
+- Report trả session ID; mở được phiên tương ứng trong DSH.
+- Provider/model khớp cấu hình, tệp report tồn tại trong workspace được chọn.
+- Không có cổng duyệt chưa xử lý trước bước bàn giao.
+
+Nếu job `completed` nhưng node `BLOCKED` hoặc báo cáo thiếu đầu ra, smoke test chưa đạt.
+
+## 6 · Kiểm tra credential sau restart
+
+Deployment DSH có thể cấp lại token khi khởi động. Nếu Workloop bắt đầu lỗi 401 sau restart,
+đối chiếu token hiện tại, cập nhật đúng nguồn `DSH_TOKEN` của backend rồi restart/reload backend
+theo runbook. Không thay token TestForge để sửa lỗi xác thực DSH.
+
+Tiếp theo: [Vận hành Harness từ Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop).

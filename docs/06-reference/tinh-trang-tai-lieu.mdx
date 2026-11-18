@@ -30,9 +30,9 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | System Directory | 🟢 Published | Nhóm điều phối |
 | Tầng 1 — Interface | 🟢 Published | Nhóm điều phối |
 | Tầng 2 — Workflow | 🟢 Published | Nhóm điều phối |
-| Tầng 3 — Harness (tổng quan) | 🟢 Published | Nhóm harness |
+| Tầng 3 — Harness (tổng quan) | 🟡 Draft bổ sung ranh giới Workloop/plugin, chờ review | Nhóm harness |
 | Tầng 3 — Agent Memory | 🟡 Draft | *đang cập nhật* |
-| Tầng 3 — TestForge | 🟢 Published | Nguyễn Hữu Quân |
+| Tầng 3 — TestForge | 🟡 Draft bổ sung luồng broker/Workloop, chờ review | Nguyễn Hữu Quân / Nhóm harness |
 | Tầng 4 — Sandbox | 🟢 Published | Nguyễn Trung Kiên |
 | Luồng End-to-End | 🟢 Published | Nhóm điều phối |
 | Giao tiếp & Contracts | 🟢 Published | Nhóm điều phối |
@@ -50,9 +50,9 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 | Workloop — gọi tool MCP | 🟢 Published | *đang cập nhật* |
 | Workloop — dashboard | 🟢 Published | *đang cập nhật* |
 | Workloop — xử cố | 🟢 Published | *đang cập nhật* |
-| Harness (DSH) | ⚪ Placeholder | *đang cập nhật* |
+| Harness — giới thiệu, cài đặt/kết nối, vận hành từ Workloop | 🟡 Draft (3 trang), chờ review và smoke test môi trường | Nhóm harness |
 | Agent Memory (Cognee) | ⚪ Placeholder | *đang cập nhật* |
-| TestForge | 🟡 Draft (thiếu cài đặt chi tiết) | Nguyễn Hữu Quân |
+| TestForge — giới thiệu, kết nối, quy trình, Workloop, xử lý sự cố | 🟡 Draft (5 trang + mẫu spec/persona), chờ nghiệm thu E2E | Nguyễn Hữu Quân / Nhóm harness |
 | Sandbox Kit | 🟡 Draft (thiếu cài đặt chi tiết) | Nguyễn Trung Kiên |
 | Agent Orchestrator | ⚪ Placeholder | *đang cập nhật* |
 | Công cụ hỗ trợ (Gitea, Phoenix, Steel, Playwright/k6, VFS) | 🟡 Draft | Nhóm điều phối |
@@ -101,5 +101,22 @@ Bảng theo dõi tiến độ hoàn thiện Knowledge Base. Mỗi nhóm cập nh
 - [ ] Xuất hình từ slide vào `static/img/` (quy ước trong `static/img/README.md`)
 - [x] Ảnh chụp dashboard cho trang giao diện — đã nhúng 3 ảnh (`workloop-dashboard-tong-quan/dag/duyet.jpeg`)
 - [ ] Điền tên người phụ trách cho 3 mảng: Điều phối, Harness, Agent Memory
-- [ ] Harness / Agent Memory / Orchestrator: điền nội dung HDSD theo template chuẩn
+- [x] Harness: bổ sung HDSD kết nối và vận hành từ Workloop
+- [x] TestForge: bổ sung kết nối, quy trình, workflow mẫu và xử lý sự cố
+- [ ] Review và nghiệm thu smoke test Harness, suite TestForge trên Workloop theo bản bổ sung 17/11/2026
+- [ ] Agent Memory / Orchestrator: điền nội dung HDSD theo template chuẩn
 - [ ] Kiểm chứng E2E luồng TestForge → Sandbox → cập nhật ADR-0004
+
+## Căn cứ của bản bổ sung Harness/TestForge
+
+Nội dung ngày **17/11/2026** được đối chiếu mã nguồn gateway/loader và định nghĩa tool, chưa
+thay thế bằng chứng chạy thật trên deployment hiện tại:
+
+| Nguồn | Revision | Tệp đối chiếu |
+|---|---|---|
+| Workloop | `1947a19ccb532f507394f9ac71fa2b51520f1785` | `src/workloop/backend/services/loader.py`, `src/workloop/backend/processing/process.py`, `src/workloop/gateway/deepseek_harness/gateway.py` |
+| `vai_testforge` | `f9120a741a7fc28b3c1ef292de0542d83aec881e` | `lib/index.js`: 10 tool, preview/execute, polling, tham số |
+
+Nguồn triển khai do admin cấp, không đưa URL nội bộ thật vào bộ tài liệu công khai. Endpoint nội bộ timeout trong phiên soạn;
+cần xác nhận lại phiên bản triển khai, health, đăng nhập SUT và lượt test E2E trước khi chuyển
+các trang bổ sung sang Published.

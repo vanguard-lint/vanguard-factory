@@ -1,0 +1,93 @@
+---
+title: Vận hành Harness từ Workloop
+description: Chọn workflow, theo dõi contract/session, duyệt HITL và đối soát công việc sau gián đoạn.
+sidebar_position: 3
+---
+
+# Vận hành Harness từ Workloop
+
+Trang này dùng **dashboard Workloop trên desktop** làm điểm theo dõi chính. Điều kiện trước:
+[kết nối gateway DSH](/docs/user-guides/harness-dsh/cai-dat-ket-noi) đã qua smoke test.
+
+## 1 · Kiểm tra workflow trước khi chạy
+
+Trong **Factory**, xác định workflow và phiên bản/SHA vừa sync. Sang **Workloop** để xem DAG,
+role, brief và phụ thuộc. Kiểm tra workspace, model, giới hạn thời gian/re-arm và các điểm cần
+người duyệt. Với kiểm thử, chốt thêm SUT, suite/profile và revision ứng dụng.
+
+Chạy bằng MCP `run_workflow` hoặc REST theo
+[Vòng 4 bước](/docs/user-guides/workloop-dieu-phoi/vong-4-buoc). Lưu `job_id` ngay khi nhận được.
+Đây là **Workloop job ID**, chưa phải mã job của một tool như TestForge.
+
+## 2 · Theo dõi ở Runs
+
+| Cần biết | Đọc ở đâu | Cần đối chiếu |
+|---|---|---|
+| Workflow chạy tới đâu | Runs → job → node/timeline | Trạng thái và dependency của node |
+| Agent đang làm task nào | Report hoặc sự kiện node | Node ID, attempt, contract/session ID |
+| Agent đã tạo gì | Report cùng tệp đầu ra | Đường dẫn, nội dung, revision nguồn |
+| TestForge kiểm thử ra sao | Report của node QA | TestForge job ID, suite, target, verdict và evidence |
+| Việc gì cần quyết định | Duyệt | Tiêu chí, bằng chứng và lý do duyệt/yêu cầu sửa |
+
+Qua MCP dùng `get_run(job_id)` để đọc trạng thái/sự kiện, `get_report(job_id)` để đọc sản phẩm
+của từng node. Mở đúng session trong DSH khi cần xem tool call, lỗi provider hoặc nội dung chi
+tiết. Không gửi thêm prompt thủ công vào phiên đang được gateway điều khiển vì có thể làm sai
+brief và trạng thái task.
+
+## 3 · Đọc đúng các lớp trạng thái
+
+| Quan sát | Có thể kết luận | Còn phải kiểm tra |
+|---|---|---|
+| Agent nói đã hoàn thành | Có một lời tự báo cáo | Contract và đầu ra thực tế |
+| TaskLoop `DONE` | Agent kết thúc hợp đồng nhiệm vụ | Test, bằng chứng và review |
+| Workloop job `completed` | Engine kết thúc lượt chạy | Kết quả từng node và gate |
+| TestForge job `completed` | Job kiểm thử kết thúc | Assertion, số case, exit code và verdict |
+| Testcase `PASS` | Case đạt với cấu hình lần chạy đó | Đúng suite/target/revision; tiêu chí còn lại |
+
+Node bị thiếu ngữ cảnh nên trả `NEEDS_CONTEXT`; lỗi kết nối hoặc testcase chưa đạt cần được ghi
+rõ trong report. Không chuyển lỗi thành `DONE` chỉ để DAG chạy tiếp.
+
+## 4 · Duyệt HITL
+
+Khi task có `need_review: human` hoặc cổng review tương ứng, mở tab **Duyệt** và đọc nội dung
+card. Với TestForge, kiểm tra ít nhất phạm vi chức năng, dữ liệu, target và tác động ghi/xóa
+trước khi cho chạy. Sau test, đối chiếu kết quả từng case và bằng chứng trước khi bàn giao.
+
+Ghi lý do khi duyệt, yêu cầu sửa hoặc từ chối. Duyệt kế hoạch kiểm thử và duyệt kết quả là hai
+quyết định ở hai thời điểm. Nếu agent hỏi thêm trong phiên DSH, xử lý theo tương tác mà gateway
+đang expose; không coi một câu xác nhận trong chat khác là quyết định cho card Workloop.
+
+## 5 · PAUSE, STOP và resume
+
+| Thao tác | Dùng khi | Lưu ý |
+|---|---|---|
+| `pause_run(job_id, "PAUSE")` | Muốn giữ checkpoint để xem xét | Dừng theo ranh giới thực thi của engine |
+| `pause_run(job_id, "STOP")` | Muốn chấm dứt lượt điều phối | Cần đối soát job dịch vụ đã gửi |
+| `resume_run(job_id)` | Tiếp tục checkpoint theo cơ chế Workloop | Kiểm tra trạng thái node/contract được tái sử dụng |
+| Chạy `fresh=true` | Cần một lần chạy mới sau thay đổi đã duyệt | Có thể chạy lại agent và tạo thêm job dịch vụ |
+
+Hủy phiên DSH hoặc dừng polling không chứng minh job TestForge đã dừng. Nếu report đã có mã
+TestForge, đọc lại bằng `testforge_result` trước khi quyết định tạo job mới.
+
+## Cấp secret đúng lớp
+
+| Credential | Đặt tại | Mục đích |
+|---|---|---|
+| `WORKLOOP_TOKEN` | Backend/MCP client Workloop | Gọi API điều phối |
+| `DSH_TOKEN` | Môi trường backend Workloop | Gateway đăng nhập Harness |
+| `TESTFORGE_BROKER_TOKEN` | Settings → Secrets của DSH hoặc cấu hình host tương ứng | Plugin gọi broker TestForge |
+| Mật khẩu tài khoản SUT | Môi trường broker theo `password_env` | Runner đăng nhập ứng dụng được kiểm thử |
+
+Chỉ ghi tên ref trong brief. Không yêu cầu agent in secret để kiểm tra kết nối.
+
+## Kết quả đúng phải thấy
+
+Report có node/Workloop job ID, session ID, trạng thái TaskLoop, tệp/commit đầu ra, các test
+đã chạy và hạn chế còn lại. Với TestForge bổ sung job ID dịch vụ, target, revision SUT,
+suite/profile, số case PASS/FAIL/SKIP và đường dẫn evidence. Nếu không có dữ liệu nào thì ghi
+"chưa xác minh" cùng nguyên nhân.
+
+Sau review, Workloop giữ quyết định và lý do tương ứng. Có thể truy từ node tới đúng phiên
+Harness và mã job dịch vụ mà không chạy lại công việc chỉ để lấy kết quả.
+
+Tiếp theo: [Workflow hồi quy với TestForge](/docs/user-guides/testforge/tich-hop-workloop).

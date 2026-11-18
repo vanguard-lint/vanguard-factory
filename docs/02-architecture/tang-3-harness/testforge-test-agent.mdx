@@ -7,19 +7,17 @@ sidebar_position: 3
 # TestForge AI — kiểm chứng độc lập
 
 ```mermaid
-flowchart LR
-    subgraph TF["TestForge — quan sát viên bên ngoài"]
-        direction TB
-        A1["Agent 1 · Functional<br/>yêu cầu → kịch bản → bằng chứng thực thi<br/>(Playwright headless trong sandbox)"]
-        A2["Agent 2 · Performance<br/>trace/OpenAPI → workload k6<br/>(p50/p95/p99 · tỷ lệ lỗi · throughput)"]
-        A3["Agent 3 · Recommendation<br/>nguyên nhân khả dĩ + khuyến nghị<br/>+ kế hoạch xác minh"]
-    end
-    A1 --> E["Bằng chứng theo mã job<br/>script · ảnh · trace · video · log · báo cáo k6"]
+flowchart TB
+    P["Plugin trên Harness"] --> B["TestForge broker"]
+    B --> A1["Agent 1: Functional"]
+    B --> A2["Agent 2: Performance"]
+    A2 --> A3["Agent 3: Recommendation"]
+    A1 --> E["Bằng chứng theo job"]
     A2 --> E
-    A2 --> A3
-    E --> G{"Promotion gate — step_coverage ·<br/>oracle_from_contract · replay_pass · video_evidence"}
-    G -->|"PASS / HEALED_PASS"| R["Vào bộ test chuẩn (regression)"]
-    G -->|"FAIL / ERROR / PARTIAL"| X["Không vào regression"]
+    A3 --> E
+    E --> G{"Promotion gate và review"}
+    G -->|"Đạt và được duyệt"| R["Bộ test hồi quy"]
+    G -->|"Chưa đạt"| X["Giữ kết quả để xử lý"]
 ```
 
 ## Vai trò: quan sát viên bên ngoài
@@ -38,8 +36,8 @@ trong quyền sửa của agent thực thi. TestForge đồng hành xuyên suố
 
 ## Ba agent
 
-- **Agent 1 · Functional** — yêu cầu → kịch bản → bằng chứng thực thi (Playwright headless trong
-  Sandbox; khám phá UI thật để tạo locator/trace).
+- **Agent 1 · Functional** — yêu cầu → kịch bản → bằng chứng thực thi (runner Playwright;
+  khám phá UI thật để tạo locator/trace).
 - **Agent 2 · Performance** — trace/OpenAPI → workload k6 → chạy tải → đánh giá ngưỡng
   (p50/p95/p99, tỷ lệ lỗi, throughput).
 - **Agent 3 · Recommendation** — kết quả Agent 2 → nguyên nhân khả dĩ + khuyến nghị + kế hoạch xác
@@ -60,10 +58,37 @@ Một luồng test chỉ vào được bộ test chuẩn (regression) khi qua ga
 Kết quả tổng thể: **PASS / HEALED_PASS / FAIL / ERROR / PARTIAL** — chỉ PASS/HEALED_PASS qua gate
 và được duyệt mới đưa vào regression.
 
+`HEALED_PASS` có nghĩa test/locator đã thay đổi. Cần giữ kết quả gốc và review revision mới;
+không coi việc tự heal bộ test chuẩn là bằng chứng ứng dụng đã đạt với suite ban đầu.
+
 ## Bằng chứng
 
-Mỗi lần chạy lưu theo mã job: **script, ảnh, trace, video, log, báo cáo k6** — nằm ngoài phiên
-sandbox để dùng cho hồi quy và đối chiếu.
+Mỗi lần chạy lưu theo mã job: **script, ảnh, trace, video, log, báo cáo k6** tùy pipeline và cấu
+hình. Chúng cần được lưu ngoài vòng đời phiên thực thi để dùng cho hồi quy và đối chiếu.
+
+## Kết nối với Harness và Workloop
+
+`vai_testforge` đăng ký các tool trong DSH. Khi agent gọi tool, plugin kết nối HTTP tới broker;
+broker tổ chức pipeline và runner thực thi. Đây là ba thành phần khác nhau: cài plugin không
+tự dựng broker, cài trình duyệt hoặc cấp tài khoản SUT.
+
+Trong deployment tham chiếu, broker khởi chạy runner trên host đã cấu hình. Vị trí runner và
+việc chạy trong Sandbox Kit phải được xác nhận theo môi trường; không suy ra tích hợp Sandbox
+Kit chỉ từ tên TestForge hoặc việc Harness đang chạy trong container.
+
+Workloop giao node QA qua gateway DSH. Report cần nối được Workloop job ID, session ID và
+TestForge job ID. `completed` của broker là trạng thái thực thi; PASS/FAIL của testcase và
+quyết định chấp nhận của người duyệt là hai kết luận riêng.
+
+| Luồng | Điểm vào plugin | Mục đích |
+|---|---|---|
+| Yêu cầu kiểm thử mới | `testforge_command` | Preview rồi xác nhận để chạy functional/perf |
+| Sinh test/khám phá | `testforge_explore`, `testforge_orchestrate` | Tạo testcase và bằng chứng; cần review trước khi làm bộ chuẩn |
+| Hồi quy đã duyệt | `testforge_replay`, `testforge_staging` | Đối chiếu session/suite cụ thể |
+| Đọc kết quả | `testforge_result`, `testforge_evidence` | Tra job và evidence đúng phạm vi |
+
+Workflow hồi quy có cổng duyệt và hướng dẫn đọc kết quả nằm tại
+[Tích hợp TestForge vào Workloop](/docs/user-guides/testforge/tich-hop-workloop).
 
 :::info[Hướng dẫn sử dụng]
 

@@ -1,0 +1,183 @@
+---
+title: Kiểm thử qua plugin Harness
+description: Giao lệnh TestForge, xem kế hoạch, xác nhận phạm vi, theo dõi job và đánh giá kết quả.
+sidebar_position: 14
+sidebar_label: Harness · Kiểm thử
+---
+
+# Kiểm thử qua plugin Harness
+
+Điều kiện: [kết nối broker](/docs/user-guides/testforge/cai-dat-ket-noi) đã kiểm tra. Các tên
+chức năng, tài khoản và URL `example.invalid` dưới đây là dữ liệu minh họa; thay bằng môi
+trường staging được cấp trước khi chạy. Ví dụ chưa phải biên bản nghiệm thu E2E.
+
+Các JSON bên dưới là **đối số tool `vai_testforge`**, không phải payload dùng nguyên xi cho
+REST hoặc cờ CLI. Bộ hướng dẫn sản phẩm trong
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5) mô tả đường API/CLI riêng;
+đối chiếu schema của đúng lớp trước khi chuyển một ví dụ sang lớp khác.
+
+## 1 · Chuẩn bị đầu vào
+
+| Đầu vào | Cần chốt |
+|---|---|
+| Yêu cầu | Chức năng, điều kiện trước, bước thao tác, kết quả mong đợi |
+| SUT | URL frontend/API, build hoặc commit đang triển khai |
+| Tài khoản/dữ liệu | Quyền phù hợp, fixture và phạm vi được phép tạo/sửa/xóa |
+| Loại kiểm thử | Functional, hồi quy suite cố định hoặc performance |
+| Giới hạn | Timeout, số chức năng; thêm mức tải và ngưỡng nếu chạy performance |
+
+Ngữ cảnh lấy từ memory cần được đối chiếu yêu cầu đã duyệt. Dữ liệu thiếu hoặc cũ phải được
+làm rõ trước khi dùng làm kỳ vọng kiểm thử.
+
+## 2 · Xem kế hoạch với testforge_command
+
+Với một lệnh tổng quát, yêu cầu agent gọi **`testforge_command`** lần đầu với `confirm: false`:
+
+```json
+{
+  "text": "Kiểm thử chức năng xem danh sách công việc trên staging; chỉ kiểm tra luồng đọc.",
+  "confirm": false
+}
+```
+
+Đọc mode được phân loại, chức năng được nhận diện, dữ liệu sẽ lấy từ memory và thông tin còn
+thiếu. Nếu chưa đúng, sửa yêu cầu và tạo preview mới.
+
+Ở revision tham chiếu, nhánh preview gửi **`text` và `allow_llm: true`** tới broker; các override
+`mode`, `functions`, URL và email chỉ được đưa vào nhánh execute. Vì vậy phải giữ mô tả `text`
+đầy đủ và đối chiếu cấu hình cuối trước khi chạy. Preview có thể dùng model để phân tích yêu
+cầu, không phải cam kết không phát sinh chi phí model.
+
+## 3 · Xác nhận rồi thực thi
+
+Sau khi người có quyền duyệt phạm vi, agent gọi lại `testforge_command` với cấu hình đã chốt:
+
+```json
+{
+  "text": "Kiểm thử chức năng xem danh sách công việc trên staging; chỉ kiểm tra luồng đọc.",
+  "mode": "functional",
+  "functions": ["Xem danh sách công việc"],
+  "base_url": "https://staging.example.invalid",
+  "api_url": "https://api-staging.example.invalid",
+  "email": "qa@example.invalid",
+  "confirm": true,
+  "job_timeout_seconds": 600
+}
+```
+
+Tên chức năng phải tồn tại/được resolve đúng trên broker. Mật khẩu không nằm trong JSON.
+Không tự chuyển luồng đăng nhập sang chế độ Dev nếu profile chỉ hỗ trợ tài khoản API.
+
+Trong Workloop, sự đồng ý cho phép chạy phải được thể hiện qua cổng duyệt/đầu vào đã duyệt
+của workflow; không dùng việc model tự điền `confirm: true` làm bằng chứng phê duyệt. Nếu URL,
+danh sách chức năng hoặc tải thay đổi sau preview, cần duyệt lại cấu hình cuối.
+
+**Kết quả đúng:** broker cấp mã job; plugin theo dõi job và trả kết quả có report/evidence nếu
+pipeline tạo được. Tool có thể chờ lâu; giữ mã job nếu đã nhận được, tránh bấm chạy lại khi mất
+phản hồi. Trường `job_timeout_seconds` của tool được giới hạn trong khoảng 30–1200 giây.
+
+## 4 · Đọc lại job và evidence
+
+Gọi **`testforge_result`** với mã thật đã nhận:
+
+```json
+{
+  "job_id": "JOB-thay-bang-ma-thuc",
+  "wait_for_completion": true,
+  "poll_interval_sec": 5,
+  "timeout_sec": 600
+}
+```
+
+Đọc trạng thái thực thi, exit code, JSON kết quả và đường dẫn log nếu có. Nếu pipeline đã có
+artifact, dùng **`testforge_evidence`** với đường dẫn tương đối dưới `artifacts/` lấy từ kết quả:
+
+```json
+{
+  "path": "orchestration/THAY-BANG-BAO-CAO-THUC.html",
+  "max_bytes": 1048576
+}
+```
+
+Không đoán tên artifact hoặc dùng đường dẫn từ job khác. Chia sẻ evidence qua quyền truy cập
+được cấp; kiểm tra link/report không chứa token trước khi đưa vào tài liệu, ticket hoặc ảnh.
+
+Với broker mô tả trong PR #5, danh mục job nằm trong RAM của một tiến trình. Sau restart,
+`result/{job_id}` có thể trả 404 dù log/artifact vẫn còn trên volume. Giữ các ID, đường dẫn
+artifact và report tại Workloop; không gửi lại tác vụ ghi chỉ vì không tra được job cũ.
+
+**Kết quả đúng:** report và artifact khớp cùng job, target, chức năng và thời điểm chạy. Nếu
+thiếu bằng chứng bắt buộc, ghi rõ phần chưa xác minh dù phần tóm tắt có chữ PASS.
+
+## Khi cần dùng tool chuyên biệt
+
+| Mục tiêu | Tool | Điểm cần kiểm tra |
+|---|---|---|
+| Tìm testcase | `testforge_fetch_testcase` | Dataset đúng phạm vi; nội dung là ngữ cảnh để QA đối chiếu |
+| Tạo testcase | `testforge_explore` | Đầu vào chuẩn 5 trường; có thể thao tác ghi lên SUT |
+| Functional nhiều chức năng | `testforge_orchestrate` | Reset/heal và tác động dữ liệu phải được xem xét |
+| Replay session | `testforge_replay` | Dùng session thật trên broker; giữ `heal: false` khi đối chiếu bộ chuẩn |
+| Hồi quy suite đã duyệt | `testforge_staging` | `profile` và `suite` là đường dẫn JSON trên broker |
+| Performance | `testforge_perf` | `requirement` là đường dẫn JSON; `profile` chọn workload có thật |
+
+Đầu vào exploration gồm `function_id`, `feature`, `precondition`, `steps`, `expected_result`.
+Tool nhận `input_inline` dưới dạng chuỗi JSON hoặc `input_json` trỏ tới file trên broker. Một
+đường dẫn trên máy người dùng chưa chắc tồn tại trên broker.
+
+Ví dụ tham số **`testforge_replay`** cho session đã duyệt:
+
+```json
+{
+  "session": "artifacts/automation/exploration/SESSION-DA-DUYET",
+  "api_url": "https://api-staging.example.invalid",
+  "email": "qa@example.invalid",
+  "password_env": "QA_STAGING_PASSWORD",
+  "heal": false,
+  "job_timeout_seconds": 600,
+  "wait_for_completion": false
+}
+```
+
+Nếu cần heal locator, giữ kết quả gốc và review thay đổi test/locator như revision mới. Không
+thay kỳ vọng nghiệp vụ để biến một testcase FAIL thành PASS.
+
+## Kiểm thử hiệu năng
+
+Chốt workload và ngưỡng trước khi chạy. Ví dụ tiêu chí để QA/admin chuyển vào requirement
+đúng schema của phiên bản broker:
+
+| Nội dung | Ví dụ minh họa |
+|---|---|
+| Endpoint | API đọc danh sách trên staging |
+| Profile | `smoke`, mức tải thấp do nhóm vận hành xác định |
+| Thời lượng và tài nguyên | Có trần thời gian, số user và tốc độ yêu cầu |
+| Ngưỡng | p95 dưới 500 ms, tỷ lệ lỗi dưới 1% — chỉ là ví dụ, cần duyệt |
+
+Gọi **`testforge_perf`** khi file requirement đã có trên broker:
+
+```json
+{
+  "requirement": "opt/perf/requirements/QA-READ-DA-DUYET.json",
+  "profile": "smoke",
+  "base_url": "https://api-staging.example.invalid",
+  "timeout_seconds": 120,
+  "job_timeout_seconds": 180,
+  "wait_for_completion": false
+}
+```
+
+Đây là đường dẫn mẫu, không phải file được cung cấp sẵn. Phải kiểm tra workload trong
+requirement thực tế; chuỗi `profile: smoke` tự nó không chứng minh mức tải thấp. Với command
+mode `perf`, broker có thể suy workload từ trace/OpenAPI và gọi Agent 3 khi FAIL; vẫn cần
+review cấu hình tải cuối và kiểm chứng recommendation bằng số liệu.
+
+## Phân biệt ba kết luận
+
+| Lớp | Câu hỏi | Dữ liệu cần đọc |
+|---|---|---|
+| Thực thi | Job có chạy xong không? | Status, exit code, lỗi runner |
+| Chất lượng | Các tiêu chí có đạt không? | Assertion, coverage, số case, ngưỡng tải và evidence |
+| Quyết định | Có chấp nhận kết quả không? | Review của QA/Dev và cổng duyệt Workloop |
+
+`PASS_WITH_WARNING` cần đọc cảnh báo. `HEALED_PASS` cần review thay đổi. `PARTIAL` không phải
+toàn bộ phạm vi đã đạt. Báo cáo cuối phải giữ nguyên các case FAIL/SKIP và điều kiện chưa kiểm tra.

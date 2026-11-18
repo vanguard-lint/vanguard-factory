@@ -1,0 +1,138 @@
+---
+title: Kết nối TestForge với Harness
+description: Cài vai_testforge vào profile DSH, cấu hình broker/credential và kiểm tra từ chính runtime.
+sidebar_position: 13
+sidebar_label: Harness · Kết nối plugin
+---
+
+# Kết nối TestForge với Harness
+
+Mục tiêu: agent trên Harness thấy đúng tool và gọi được TestForge broker. **Plugin là client**;
+Playwright, k6, tài khoản SUT và kho báo cáo thuộc môi trường broker/runner riêng.
+
+Trang này hướng dẫn phía **Harness/plugin**. Bộ hướng dẫn cài Python/Node, Broker, Docker,
+Cognee Adapter và vận hành TestForge đang được bổ sung trong
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5). PR đó chưa được merge khi
+đối chiếu; cần xác nhận bản broker thực tế trước khi dùng các API mới của nó.
+
+## 1 · Kiểm tra điều kiện trước
+
+| Thành phần | Điều kiện |
+|---|---|
+| Harness DSH | Hoạt động, đúng profile/workspace và model/provider |
+| Plugin | `vai_testforge` được nạp vào profile agent sử dụng |
+| Broker | Có URL truy cập được từ Harness và credential nếu bật xác thực |
+| Runner | Đã cài dependency và cấu hình cho loại test sẽ chạy |
+| SUT | Có môi trường staging, tài khoản test, dữ liệu và phạm vi đã duyệt |
+
+Lấy URL broker từ admin của deployment, ví dụ `https://testforge.example.invalid` chỉ là
+placeholder. URL SUT là địa chỉ **ứng dụng cần kiểm thử**, khác URL broker.
+
+## 2 · Cài plugin vào đúng profile
+
+Trên DSH, mở **Plugin Hub/Plugins**, tìm `vai_testforge`, kiểm tra nguồn/phiên bản rồi cài vào
+profile đang phục vụ agent. Nếu plugin đã chạy đúng revision, không cần cài lại.
+
+Khi quản trị bằng CLI, ví dụ dưới đây dùng Compose service `deepseek-harness`, profile `web`
+và source đã đối chiếu. Chỉ áp dụng khi đúng service/profile của deployment:
+
+```bash
+docker compose exec deepseek-harness dsh plugin --profile web add \
+  'git+https://gitea.example.invalid/team/vai_testforge.git#f9120a741a7fc28b3c1ef292de0542d83aec881e'
+```
+
+Thay URL Git mẫu bằng nguồn nội bộ được admin cấp và xác nhận commit tồn tại trên nguồn đó.
+Kiểm tra `DSH_HOME`/HOME của môi trường thực thi trước khi dùng CLI. Cài trên máy cá nhân với
+profile khác sẽ không làm plugin xuất hiện trong container đang chạy.
+
+Tên cần dùng là **`vai_testforge`**. Bản tham chiếu cũ `vai-testforce` có bề mặt tool khác;
+không thay thế hai gói chỉ vì cùng nói về TestForge.
+
+**Kết quả đúng:** package đã cài, trạng thái nạp của plugin thành công, phiên agent thấy các tool
+của đúng revision. Nếu dùng bản phát hành mới hơn, đối chiếu schema trước khi dùng ví dụ.
+
+## 3 · Cấu hình kết nối và credential
+
+Trong **DSH → Settings → Secrets**, đặt các tên sau theo thông tin admin cấp:
+
+| Tên | Ý nghĩa |
+|---|---|
+| `TESTFORGE_BROKER_URL` | URL gốc broker, không kèm `/api/v1` hoặc token |
+| `TESTFORGE_BROKER_TOKEN` | Bearer token gọi các API broker được bảo vệ |
+
+Plugin đọc cấu hình mỗi lần gọi. Với các tên chuẩn trên, nguồn cấu hình ưu tiên vault rồi
+environment, cấu hình plugin và URL mặc định. Để tránh khác biệt giữa môi trường, chọn một
+nguồn chính và xóa giá trị cũ không còn dùng theo quy trình quản trị.
+
+Đây là hành vi phía **plugin**, không phải hot reload của broker. Theo bản broker được mô tả
+trong PR #5, phần lớn env được đọc khi khởi động/import module. Đổi env của broker cần nạp lại
+tiến trình; đổi `env_file` của Docker cần tạo lại container theo hướng dẫn triển khai.
+
+Đường lấy testcase qua TestForge broker có thể dùng **Cognee Adapter HTTP `/v1`** với
+`AGENT_MEMORY_API_URL` và `AGENT_MEMORY_API_KEY` trên broker. Nó khác kết nối MCP của plugin
+Agent Memory trong Harness; token broker, token Adapter và credential Cognee không dùng thay nhau.
+
+Mật khẩu đăng nhập **SUT** được cấu hình trên broker theo tên `password_env` mà runner sử dụng,
+hoặc qua profile staging tương ứng. Token broker không phải mật khẩu SUT; plugin được cài cũng
+không tự truyền secret của Workloop sang runner.
+
+## 4 · Gọi health từ Harness
+
+Trong một phiên kiểm tra DSH được cấp tool, gửi:
+
+```text
+Chỉ gọi testforge_health với đối số rỗng. Tóm tắt status, phiên bản broker,
+yêu cầu xác thực và khả năng runner/k6/memory nếu có trong phản hồi.
+```
+
+Tương đương tool call:
+
+```json
+{}
+```
+
+**Kết quả đúng:** tool `testforge_health` trả phản hồi hợp lệ, thường có `status: ok`. Đọc thêm
+phiên bản và từng dependency cần cho loại test sắp chạy. Broker có thể cho health không cần
+token nhưng vẫn yêu cầu xác thực khi tạo job; health không kiểm chứng tài khoản SUT hoặc PASS
+của suite.
+
+Nếu chẩn đoán từ host có quyền truy cập broker, có thể đọc health bằng REST:
+
+```bash
+curl --connect-timeout 5 --max-time 15 \
+  "$TESTFORGE_BROKER_URL/api/v1/health"
+```
+
+Kết quả từ máy người dùng không thay phép thử từ Harness. Nếu timeout, kiểm tra VPN/routing
+và kết nối của từng host trước khi đổi credential.
+
+## 5 · Kiểm tra đúng bộ tool
+
+Mã nguồn revision tham chiếu đăng ký 10 tool:
+
+| Tool | Dùng cho |
+|---|---|
+| `testforge_command` | Nhận lệnh tổng quát, preview rồi thực thi functional/perf |
+| `testforge_health` | Đọc trạng thái broker và dependency |
+| `testforge_fetch_testcase` | Lấy ngữ cảnh testcase từ Agent Memory |
+| `testforge_explore` | Khám phá UI, tạo testcase và bằng chứng |
+| `testforge_orchestrate` | Chạy chuỗi functional theo danh sách chức năng |
+| `testforge_replay` | Chạy lại session/testcase, tùy chọn heal |
+| `testforge_staging` | Chạy suite hồi quy theo profile staging |
+| `testforge_perf` | Chạy workload k6 từ requirement đã chuẩn bị |
+| `testforge_result` | Đọc/poll job đã có |
+| `testforge_evidence` | Đọc artifact của job từ broker |
+
+Không dùng `testforge_recommend` như một tool mặc định của revision này; luồng command perf có
+thể gọi Agent 3 qua broker. Một số tài liệu cũ ghi 7/8 tool nên cần đối chiếu inventory thực tế.
+
+API có trên broker không mặc nhiên có tool tương ứng. Bộ 10 tool này chưa có tool
+`impact/analyze` hoặc cancel riêng; wrapper `testforge_staging` tham chiếu cũng chưa chuyển
+tiếp các trường impact. Xem [phạm vi tích hợp Workloop](/docs/user-guides/testforge/tich-hop-workloop)
+trước khi dùng ví dụ API/CLI của một bản broker mới hơn.
+
+## Sau khi kết nối
+
+- Dùng [quy trình preview và kiểm thử](/docs/user-guides/testforge/quy-trinh-kiem-thu) cho yêu cầu mới.
+- Dùng [workflow hồi quy](/docs/user-guides/testforge/tich-hop-workloop) cho suite cố định đã duyệt.
+- Khi lỗi, đối chiếu [bảng chẩn đoán](/docs/user-guides/testforge/xu-ly-su-co) theo đúng lớp.

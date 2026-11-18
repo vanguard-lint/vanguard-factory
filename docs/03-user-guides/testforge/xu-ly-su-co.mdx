@@ -1,0 +1,70 @@
+---
+title: Xử lý sự cố tích hợp Workloop và TestForge
+description: Phân biệt lỗi gateway, plugin, broker, runner, SUT và testcase; đối soát job sau timeout.
+sidebar_position: 16
+sidebar_label: Workloop · Sự cố tích hợp
+---
+
+# Xử lý sự cố tích hợp Workloop và TestForge
+
+Trước khi xử lý, lưu **Workloop job ID, node ID, DSH session ID và TestForge job ID** nếu đã có.
+Xác định lỗi ở lớp nào để không chạy lại toàn bộ workflow một cách không cần thiết.
+
+## Chẩn đoán theo dấu hiệu
+
+| Hiện tượng | Kiểm tra | Hướng xử lý |
+|---|---|---|
+| Agent không thấy `testforge_*` | Package, profile và trạng thái nạp plugin | Kiểm tra `vai_testforge` đúng DSH_HOME/profile; xem lỗi loader/peer dependency |
+| Workloop không tạo được phiên DSH | Kết nối gateway, URL và `DSH_TOKEN` | Sửa lớp Harness trước; token broker không giải quyết lỗi này |
+| `fetch failed` / connect timeout | DNS, VPN/routing, port broker từ Harness | So sánh host người dùng, container Harness và host broker; giữ nguyên cấu hình VPN |
+| Health đạt nhưng tạo job trả 401/403 | Credential và quyền của API được bảo vệ | Đối chiếu `TESTFORGE_BROKER_TOKEN`, nguồn vault/env; không lấy token DSH thay thế |
+| HTTP 404 | URL gốc và API của phiên bản broker | URL cấu hình không có `/api/v1` lặp; đối chiếu plugin với broker |
+| `result/{job_id}` trả 404 sau restart | Broker có giữ chỉ mục job trong RAM như bản mô tả trong PR #5 không? | Đối soát log/artifact và report Workloop; không coi là quyền tạo lại tác vụ ghi |
+| HTTP 422 | Schema và trường bắt buộc | Đọc lỗi validation; kiểm tra `profile`, `suite`, `requirement` là đường dẫn đúng |
+| Job lỗi file not found | File tồn tại trên **broker host** không? | Materialize file theo quy trình của môi trường; đường dẫn local không tự được upload |
+| Không đăng nhập được SUT | URL API, email, `password_env` và cơ chế auth | Xác nhận runner hỗ trợ đúng cách đăng nhập; không tự dùng Dev login thay thế |
+| Job `completed`, testcase FAIL | Assertion, dữ liệu và evidence | Ghi nhận lỗi ứng dụng/testcase; không coi đây là health broker lỗi |
+| `PARTIAL` hoặc thiếu ảnh/video/JUnit | Bước bị ngắt, cấu hình evidence, lỗi runner | Ghi phần chưa kiểm chứng; khôi phục/chạy lại có kiểm soát |
+| Testcase đạt sau heal | Diff locator/test so với revision chuẩn | Review thay đổi; giữ kết quả và kỳ vọng gốc |
+| Kết quả không xuất hiện ở Runs | Report node có đúng đường dẫn và ID chưa? | Đọc session DSH, job broker, rồi đối soát report; không cần tạo job test mới chỉ để hiển thị |
+
+Nếu các dịch vụ bên ngoài như GitHub/Google timeout trong khi Harness/Gitea nội bộ vẫn vào
+được, kiểm tra connectivity và routing trước khi kết luận tích hợp hoặc credential bị hỏng.
+Không áp dụng thay đổi tuyến mạng chỉ để thử lại một job.
+
+## Mất phản hồi sau khi gửi job
+
+1. Đọc tool call và report xem broker đã trả `job_id` chưa.
+2. Có ID: gọi `testforge_result` cho đúng ID; không gửi lại command/explore/staging/perf.
+3. Chưa có ID: nhờ admin đối soát danh sách/log job trên broker bằng thời điểm, target và phạm vi.
+4. Chưa xác định được có tạo job hay chưa: giữ trạng thái cần đối soát, tránh tự re-arm task tạo job.
+5. Chỉ chạy lượt mới sau khi xác định kết quả cũ và tác động dữ liệu, ghi liên kết giữa hai lượt.
+
+Plugin tham chiếu có retry HTTP cho một số lỗi tạm thời. Điều đó không đảm bảo tạo job exactly-once;
+không suy ra rằng chỉ có một job tồn tại từ một lần bấm trên giao diện.
+
+## Polling timeout và hủy
+
+Timeout khi chờ kết quả, đóng tab hoặc STOP Workloop không chứng minh tiến trình kiểm thử trên
+broker đã dừng. Bộ 10 tool tham chiếu không có tool cancel riêng. Đọc lại job và nhờ admin dùng
+cơ chế dừng phù hợp của backend nếu cần; chỉ ghi "đã hủy" khi có xác nhận từ backend.
+
+[PR #5](https://github.com/vanguard-lint/vanguard-factory/pull/5) mô tả endpoint
+`POST /api/v1/cancel/{job_id}` ở broker mới hơn. Đây không phải tool sẵn có trong plugin đang
+tham chiếu, cũng không phải cơ chế cancel bền vững qua restart. Xác nhận phiên bản/quyền và
+kết quả dừng từ backend; không dùng PAUSE/STOP Workloop hoặc hết thời gian chờ làm bằng chứng.
+
+## Kết quả đúng phải thấy
+
+Đã xác định lớp phát sinh lỗi và kết quả của job cũ. Nếu cần chạy lại, lượt mới có mã riêng,
+liên kết về lượt cũ và phạm vi đã duyệt. Kết luận testcase cùng evidence phản ánh đúng dữ liệu
+thực tế; timeout hoặc thiếu bằng chứng vẫn được ghi rõ.
+
+## Hồ sơ gửi cho người xử lý
+
+Gửi các ID liên quan, thời điểm, phiên bản plugin/broker, target/revision SUT, suite/profile,
+thông báo lỗi và đường dẫn evidence được cấp quyền. Lược bỏ credential, cookie, mật khẩu,
+header Authorization và tham số token trong URL.
+
+Tiếp theo: [Vận hành Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop) ·
+[Runbook hệ thống](/docs/admin-operations/runbook-su-co).

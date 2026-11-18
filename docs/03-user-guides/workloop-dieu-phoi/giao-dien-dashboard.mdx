@@ -69,6 +69,17 @@ trúc DAG, đọc report từng node và xử lý **card duyệt HITL**. Các ta
 Cơ chế bên dưới: [Cổng duyệt & HITL](/docs/architecture/tang-2-workflow/cong-duyet-hitl) ·
 [Contract TaskLoop](/docs/architecture/giao-tiep#contract-taskloop).
 
+## Theo dõi task Harness và TestForge
+
+Với workflow có node kiểm thử, dùng **Runs → job → report của node QA** để đọc kết quả. Report
+cần có session ID của Harness, TestForge job ID, target/suite đã dùng và đường dẫn bằng chứng.
+Mở phiên DSH tương ứng khi cần kiểm tra tool call; duyệt phạm vi và kết quả tại tab **Duyệt**
+theo các gate trong spec.
+
+Đây là quy trình qua các tab hiện có. Workflow mẫu và yêu cầu cấu hình nằm tại
+[Harness từ Workloop](/docs/user-guides/harness-dsh/van-hanh-workloop) và
+[Tích hợp TestForge](/docs/user-guides/testforge/tich-hop-workloop).
+
 ## Kết quả đúng phải thấy
 
 Mở tab **Runs** sau một run: mọi node có trạng thái terminal; run có gate chờ duyệt xuất hiện ở
